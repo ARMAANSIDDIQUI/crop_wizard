@@ -29,6 +29,16 @@ const History = ({ history }) => {
 };
 
 
+const soilTypes = [
+    "Alluvial", "Arid", "Black", "Clay", "Clay Loam", "Laterite", "Loam", "Loamy", 
+    "Red Sandy", "Saline", "Sandy", "Sandy Loam", "Silt Loam", "Volcanic", "Well-drained"
+];
+
+const states = [
+    "Bihar", "Gujarat", "Himachal Pradesh", "Jammu & Kashmir", "Ladakh", "Madhya Pradesh", 
+    "Maharashtra", "Odisha", "Punjab", "Rajasthan", "Uttar Pradesh", "West Bengal"
+];
+
 const Dashboard = () => {
     const [prediction, setPrediction] = useState(null);
     const [history, setHistory] = useState([]);
@@ -41,6 +51,10 @@ const Dashboard = () => {
         ph: '',
         rainfall: '',
         temperature: '',
+        moisture: '',
+        humidity: '',
+        soil_type: soilTypes[0],
+        state: states[0],
     });
 
     const fetchHistory = async () => {
@@ -52,11 +66,9 @@ const Dashboard = () => {
             setHistory(data);
         } catch (err) {
             console.error('Failed to fetch history:', err);
-            // Don't set a user-facing error for history fetch failure, just log it
         }
     };
 
-    // Fetch history on component mount
     useEffect(() => {
         fetchHistory();
     }, []);
@@ -73,23 +85,18 @@ const Dashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            // Call to the ML service
-            const mlResponse = await axios.post('/predict', {
-                ...formData
-            });
-
+            const mlResponse = await axios.post('/predict', { ...formData });
             const predicted_crop = mlResponse.data.crop;
             
-            // Save prediction to backend
-            const backendResponse = await axios.post('/api/history', 
+            await axios.post('/api/history', 
                 { ...formData, predicted_crop },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             setPrediction(predicted_crop);
-            fetchHistory(); // Refresh history after new prediction
+            fetchHistory(); 
         } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred.');
+            setError(err.response?.data?.error || 'An error occurred during prediction.');
             console.error('Prediction error:', err);
         } finally {
             setLoading(false);
@@ -104,9 +111,10 @@ const Dashboard = () => {
                     <p className="text-center text-gray-600 mb-8">Enter the details below to get a crop recommendation.</p>
                     
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {Object.keys(formData).map((key) => (
+                        {/* Numerical Inputs */}
+                        {['nitrogen', 'phosphorus', 'potassium', 'ph', 'rainfall', 'temperature', 'moisture', 'humidity'].map((key) => (
                             <div key={key}>
-                                <label htmlFor={key} className="block text-sm font-medium text-gray-700 capitalize">{key}</label>
+                                <label htmlFor={key} className="block text-sm font-medium text-gray-700 capitalize">{key.replace('_', ' ')}</label>
                                 <input
                                     type="number"
                                     name={key}
@@ -115,9 +123,38 @@ const Dashboard = () => {
                                     onChange={handleChange}
                                     className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                                     required
+                                    step="any" // Allow decimal values
                                 />
                             </div>
                         ))}
+                        
+                        {/* Categorical Inputs */}
+                        <div>
+                            <label htmlFor="soil_type" className="block text-sm font-medium text-gray-700">Soil Type</label>
+                            <select
+                                name="soil_type"
+                                id="soil_type"
+                                value={formData.soil_type}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                            >
+                                {soilTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
+                            <select
+                                name="state"
+                                id="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                            >
+                                {states.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+
                         <div className="md:col-span-2 text-center">
                             <button
                                 type="submit"
@@ -145,5 +182,6 @@ const Dashboard = () => {
         </div>
     );
 };
+
 
 export default Dashboard;

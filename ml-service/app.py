@@ -1,20 +1,17 @@
 from flask import Flask, request, jsonify
 import joblib
 import numpy as np
+import pandas as pd
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # This will allow all origins
+CORS(app)
 
-# Load the pre-trained model and label encoder
 try:
-    # Use joblib to load files saved with joblib
     model = joblib.load('grand_crop_model.pkl')
     label_encoder = joblib.load('label_encoder.pkl')
-
 except FileNotFoundError as e:
     print(f"Error loading model or label encoder: {e}")
-    # Exit or handle gracefully if files are essential
     model = None
     label_encoder = None
 
@@ -26,36 +23,25 @@ def predict():
     try:
         data = request.get_json()
         
-        # Extract features from the request in the correct order
-        # The order should match the training data: N, P, K, temperature, humidity, ph, rainfall
-        # Assuming humidity is not provided by the frontend, we might need a default or average value.
-        # Let's use a placeholder for humidity, e.g., an average value if known, or omit if the model handles it.
-        # For this example, let's assume the model was trained on 7 features and we'll use a placeholder for humidity.
-        # A better approach is to ensure the frontend sends all required features.
+        # The model expects columns in this order:
+        # 'N', 'P', 'K', 'pH', 'Moisture', 'Temperature', 'Rainfall', 'Humidity', 'Soil_Type', 'State'
         
-        # Let's assume the model was trained on these features in this order:
-        # Nitrogen, Phosphorus, Potassium, Temperature, pH, Rainfall
-        # And let's assume the frontend sends them with these keys:
-        # 'nitrogen', 'phosphorus', 'potassium', 'temperature', 'ph', 'rainfall'
-        
-        features = [
-            float(data['nitrogen']),
-            float(data['phosphorus']),
-            float(data['potassium']),
-            float(data['temperature']),
-            float(data['ph']),
-            float(data['rainfall'])
-        ]
-        
-        # The saved model expects a certain number of features. Let's check the number of features.
-        # If the model was trained with humidity, we have a mismatch. Let's assume for now it was trained without it.
-        # If the model expects 7 features, and we have 6, we'll get an error.
-        
-        # Let's reshape data for a single prediction
-        final_features = np.array(features).reshape(1, -1)
-        
-        # Make prediction
-        prediction_index = model.predict(final_features)
+        # Create a DataFrame from the input data with the correct column names and order
+        feature_df = pd.DataFrame({
+            'N': [float(data['nitrogen'])],
+            'P': [float(data['phosphorus'])],
+            'K': [float(data['potassium'])],
+            'pH': [float(data['ph'])],
+            'Moisture': [float(data['moisture'])],
+            'Temperature': [float(data['temperature'])],
+            'Rainfall': [float(data['rainfall'])],
+            'Humidity': [float(data['humidity'])],
+            'Soil_Type': [data['soil_type']],
+            'State': [data['state']]
+        })
+
+        # The pipeline expects a DataFrame.
+        prediction_index = model.predict(feature_df)
         
         # Decode the prediction to the original label
         crop_name = label_encoder.inverse_transform(prediction_index)
@@ -64,8 +50,8 @@ def predict():
 
     except Exception as e:
         print(f"Prediction error: {e}")
-        return jsonify({'error': str(e)}), 400
+        # Return a more specific error message if possible
+        return jsonify({'error': f'An error occurred during prediction: {str(e)}'}), 400
 
 if __name__ == '__main__':
-    # Make sure to use the correct port, e.g., 5001
     app.run(debug=True, port=5001)

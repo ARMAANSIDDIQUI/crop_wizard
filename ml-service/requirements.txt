@@ -1,4 +1,11 @@
 Flask
 Flask-Cors
 numpy
+scikit-learn==1.6.1
+catboost
+xgboost
+lightgbm
 scikit-learn
+pandas
+matplotlib
+joblib

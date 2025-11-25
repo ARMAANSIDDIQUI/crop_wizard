@@ -40,13 +40,26 @@ def predict():
             'State': [data['state']]
         })
 
-        # The pipeline expects a DataFrame.
-        prediction_index = model.predict(feature_df)
+        # Use predict_proba to get the probabilities for each crop
+        prediction_probabilities = model.predict_proba(feature_df)
         
-        # Decode the prediction to the original label
-        crop_name = label_encoder.inverse_transform(prediction_index)
+        # Get the top 3 predictions
+        # argsort sorts the probabilities in ascending order, so we take the last 3 indices
+        top3_indices = np.argsort(prediction_probabilities[0])[-3:][::-1]
         
-        return jsonify({'crop': crop_name[0]})
+        # Get the corresponding probabilities and crop names
+        top3_probabilities = prediction_probabilities[0][top3_indices]
+        top3_crop_names = label_encoder.inverse_transform(top3_indices)
+        
+        # Format the response
+        predictions = []
+        for i in range(3):
+            predictions.append({
+                'crop': top3_crop_names[i],
+                'probability': round(top3_probabilities[i] * 100, 2)
+            })
+            
+        return jsonify(predictions)
 
     except Exception as e:
         print(f"Prediction error: {e}")

@@ -85,15 +85,18 @@ const Dashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
+            // The ML service now returns an array of predictions
             const mlResponse = await axios.post('/predict', { ...formData });
-            const predicted_crop = mlResponse.data.crop;
+            const predictions = mlResponse.data;
             
+            // Save only the top prediction to history
+            const topPrediction = predictions[0];
             await axios.post('/api/history', 
-                { ...formData, predicted_crop },
+                { ...formData, predicted_crop: topPrediction.crop },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            setPrediction(predicted_crop);
+            setPrediction(predictions);
             fetchHistory(); 
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during prediction.');
@@ -170,9 +173,24 @@ const Dashboard = () => {
                     
                     {prediction && (
                         <div className="mt-8 text-center bg-emerald-100 p-6 rounded-xl shadow-inner">
-                            <h3 className="text-2xl font-semibold text-emerald-800">
-                                Recommended Crop: <span className="capitalize font-bold">{prediction}</span>
-                            </h3>
+                            <h3 className="text-2xl font-semibold text-emerald-800">Top Recommendations</h3>
+                            <div className="mt-4">
+                                {/* Main Prediction */}
+                                <div className="bg-emerald-200 p-4 rounded-lg shadow-md">
+                                    <p className="text-xl font-bold text-emerald-900 capitalize">{prediction[0].crop}</p>
+                                    <p className="text-md text-emerald-700">Confidence: {prediction[0].probability}%</p>
+                                </div>
+                                
+                                {/* Alternatives */}
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {prediction.slice(1).map((item, index) => (
+                                        <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
+                                            <p className="text-lg font-semibold text-gray-800 capitalize">{item.crop}</p>
+                                            <p className="text-sm text-gray-600">Confidence: {item.probability}%</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

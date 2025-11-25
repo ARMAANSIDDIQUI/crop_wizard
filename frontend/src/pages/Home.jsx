@@ -33,17 +33,17 @@ const Home = () => {
             </div>
             
             {/* Adding some feature cards below the fold */}
-            <div className="relative z-10 w-full max-w-5xl mx-auto mt-24 px-8">
+            <div className="relative z-10 w-full max-w-5xl mx-auto mt-16 px-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg">
+                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg mb-4">
                         <h3 className="text-xl font-bold text-emerald-700 mb-2">AI-Powered Predictions</h3>
                         <p className="text-gray-600">Leverages a sophisticated machine learning model to provide accurate crop suggestions.</p>
                     </div>
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg">
+                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg mb-4">
                         <h3 className="text-xl font-bold text-emerald-700 mb-2">Personalized History</h3>
                         <p className="text-gray-600">Keep track of all your past predictions to see trends and insights over time.</p>
                     </div>
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg">
+                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-xl shadow-lg mb-4">
                         <h3 className="text-xl font-bold text-emerald-700 mb-2">Easy to Use</h3>
                         <p className="text-gray-600">A simple and intuitive interface designed for farmers and agricultural experts alike.</p>
                     </div>

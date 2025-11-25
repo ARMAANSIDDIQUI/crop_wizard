@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function Login() {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,10 +17,11 @@ export default function Login() {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ username, password }),
             });
 
-            const data = await response.json();
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : {};
 
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to login.');
@@ -49,14 +50,14 @@ export default function Login() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                         <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            type="text"
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             required
-                            placeholder="you@example.com"
+                            placeholder="your_username"
                             className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
                         />
                     </div>

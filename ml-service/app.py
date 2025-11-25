@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import pickle
+import joblib
 import numpy as np
 from flask_cors import CORS
 
@@ -8,10 +8,10 @@ CORS(app)  # This will allow all origins
 
 # Load the pre-trained model and label encoder
 try:
-    with open('grand_crop_model.pkl', 'rb') as model_file:
-        model = pickle.load(model_file)
-    with open('label_encoder.pkl', 'rb') as le_file:
-        label_encoder = pickle.load(le_file)
+    # Use joblib to load files saved with joblib
+    model = joblib.load('grand_crop_model.pkl')
+    label_encoder = joblib.load('label_encoder.pkl')
+
 except FileNotFoundError as e:
     print(f"Error loading model or label encoder: {e}")
     # Exit or handle gracefully if files are essential

@@ -8,8 +8,10 @@ app = Flask(__name__)
 CORS(app)
 
 try:
-    model = joblib.load('grand_crop_model.pkl')
-    label_encoder = joblib.load('label_encoder.pkl')
+    # model = joblib.load('grand_crop_model.pkl')
+    # label_encoder = joblib.load('label_encoder.pkl')
+    model = joblib.load('grand_crop_model_without_state_soil.pkl')
+    label_encoder = joblib.load('label_encoder_without_state_soil.pkl')
 except FileNotFoundError as e:
     print(f"Error loading model or label encoder: {e}")
     model = None

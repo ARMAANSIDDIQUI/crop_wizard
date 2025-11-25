@@ -66,6 +66,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+
+
 // --- History Routes ---
 
 // Middleware to authenticate and get user

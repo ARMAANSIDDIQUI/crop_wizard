@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -7,15 +8,15 @@ const User = require('./models/User');
 const History = require('./models/History');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'; // Use environment variables in production
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET; // Use environment variables in production
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crop_wizard', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })

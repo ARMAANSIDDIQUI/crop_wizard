@@ -46,7 +46,7 @@ const Dashboard = () => {
     const fetchHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            const { data } = await axios.get('http://localhost:3000/api/history', {
+            const { data } = await axios.get('/api/history', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setHistory(data);
@@ -74,14 +74,14 @@ const Dashboard = () => {
         try {
             const token = localStorage.getItem('token');
             // Call to the ML service
-            const mlResponse = await axios.post('http://localhost:5000/predict', {
+            const mlResponse = await axios.post('/predict', {
                 ...formData
             });
 
             const predicted_crop = mlResponse.data.crop;
             
             // Save prediction to backend
-            const backendResponse = await axios.post('http://localhost:3000/api/history', 
+            const backendResponse = await axios.post('/api/history', 
                 { ...formData, predicted_crop },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

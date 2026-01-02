@@ -100,11 +100,11 @@ app.get('/api/history', authenticate, async (req, res) => {
 
 // Save a new prediction to history
 app.post('/api/history', authenticate, async (req, res) => {
-    const { nitrogen, phosphorus, potassium, ph, rainfall, temperature, predicted_crop } = req.body;
+    const { nitrogen, phosphorus, potassium, ph, rainfall, temperature, predictions } = req.body;
     
     // Basic validation
-    if (predicted_crop == null) {
-        return res.status(400).json({ message: 'Predicted crop is required.' });
+    if (!predictions || !Array.isArray(predictions) || predictions.length === 0) {
+        return res.status(400).json({ message: 'Predictions array is required.' });
     }
     
     try {
@@ -116,7 +116,7 @@ app.post('/api/history', authenticate, async (req, res) => {
             ph,
             rainfall,
             temperature,
-            predicted_crop,
+            predictions,
         });
         await historyEntry.save();
         res.status(201).json(historyEntry);

@@ -13,7 +13,21 @@ const History = ({ history }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {history.map((item) => (
                     <div key={item._id} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1">
-                        <p className="text-lg font-semibold text-emerald-600 capitalize">{item.predicted_crop}</p>
+                        <div className="mb-4">
+                            <h4 className="font-bold text-gray-800 mb-2">Top Recommendations:</h4>
+                            {item.predictions && item.predictions.length > 0 ? (
+                                <ul className="space-y-1">
+                                    {item.predictions.map((pred, idx) => (
+                                        <li key={idx} className={`flex justify-between items-center ${idx === 0 ? 'text-emerald-600 font-bold' : 'text-gray-600'}`}>
+                                            <span className="capitalize">{pred.crop}</span>
+                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{pred.probability}%</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-lg font-semibold text-emerald-600 capitalize">{item.predicted_crop}</p>
+                            )}
+                        </div>
                         <p className="text-sm text-gray-500">Nitrogen: <span className="font-medium text-gray-700">{item.nitrogen}</span></p>
                         <p className="text-sm text-gray-500">Phosphorus: <span className="font-medium text-gray-700">{item.phosphorus}</span></p>
                         <p className="text-sm text-gray-500">Potassium: <span className="font-medium text-gray-700">{item.potassium}</span></p>
@@ -88,16 +102,33 @@ const Dashboard = () => {
             // The ML service now returns an array of predictions
             const mlResponse = await axios.post('/predict', { ...formData });
             const predictions = mlResponse.data;
-            
-            // Save only the top prediction to history
-            const topPrediction = predictions[0];
-            await axios.post('/api/history', 
-                { ...formData, predicted_crop: topPrediction.crop },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
             setPrediction(predictions);
-            fetchHistory(); 
+            
+            // Optimistically update local history so user sees it even if save fails
+            const newHistoryItem = {
+                ...formData,
+                predictions: predictions,
+                _id: Date.now().toString(), // Temporary ID
+                createdAt: new Date().toISOString()
+            };
+            setHistory(prev => [newHistoryItem, ...prev]);
+
+            try {
+                await axios.post('/api/history', 
+                    { ...formData, predictions: predictions },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                // If successful, we can fetch the official list to get the real ID, 
+                // but the local one is fine for now.
+                fetchHistory(); 
+            } catch (historyErr) {
+                console.error('Failed to save history:', historyErr);
+                if (historyErr.response && historyErr.response.status === 401) {
+                    // Optional: You could redirect to login here or just notify
+                     console.warn("Session expired or invalid token. History not saved.");
+                }
+            }
+
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during prediction.');
             console.error('Prediction error:', err);

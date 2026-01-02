@@ -4,23 +4,48 @@ import numpy as np
 import pandas as pd
 from flask_cors import CORS
 
+import os
+import traceback
+
 app = Flask(__name__)
 CORS(app)
 
-try:
-    # model = joblib.load('grand_crop_model.pkl')
-    # label_encoder = joblib.load('label_encoder.pkl')
-    model = joblib.load('grand_crop_model_without_state_soil.pkl')
-    label_encoder = joblib.load('label_encoder_without_state_soil.pkl')
-except FileNotFoundError as e:
-    print(f"Error loading model or label encoder: {e}")
-    model = None
-    label_encoder = None
+model = None
+label_encoder = None
+
+def load_models():
+    global model, label_encoder
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        print(f"DEBUG: Base directory: {base_dir}")
+        
+        model_path = os.path.join(base_dir, 'grand_crop_model.pkl')
+        label_encoder_path = os.path.join(base_dir, 'label_encoder.pkl')
+        
+        print(f"DEBUG: Loading model from: {model_path}")
+        print(f"DEBUG: Loading label encoder from: {label_encoder_path}")
+        
+        model = joblib.load(model_path)
+        label_encoder = joblib.load(label_encoder_path)
+        print("DEBUG: Models loaded successfully.")
+        return True, None
+    except Exception as e:
+        error_msg = f"Error loading model or label encoder: {e}\n{traceback.format_exc()}"
+        print(error_msg)
+        return False, str(e)
+
+# Initial load attempt
+load_models()
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    global model, label_encoder
+    
     if not model or not label_encoder:
-        return jsonify({'error': 'Model or label encoder not loaded properly.'}), 500
+        print("DEBUG: Models not found, attempting to reload...")
+        success, error = load_models()
+        if not success:
+            return jsonify({'error': f'Model loading failed: {error}'}), 500
 
     try:
         data = request.get_json()

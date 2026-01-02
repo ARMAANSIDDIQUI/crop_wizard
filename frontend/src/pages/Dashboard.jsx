@@ -67,8 +67,8 @@ const Dashboard = () => {
         temperature: '',
         moisture: '',
         humidity: '',
-        soil_type: soilTypes[0],
-        state: states[0],
+        soil_type: '',
+        state: '',
     });
 
     const fetchHistory = async () => {
@@ -171,7 +171,9 @@ const Dashboard = () => {
                                 value={formData.soil_type}
                                 onChange={handleChange}
                                 className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                required
                             >
+                                <option value="" disabled>Select Soil Type</option>
                                 {soilTypes.map(type => <option key={type} value={type}>{type}</option>)}
                             </select>
                         </div>
@@ -184,7 +186,9 @@ const Dashboard = () => {
                                 value={formData.state}
                                 onChange={handleChange}
                                 className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                required
                             >
+                                <option value="" disabled>Select State</option>
                                 {states.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>

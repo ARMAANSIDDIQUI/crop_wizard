@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
+import { FaLeaf } from 'react-icons/fa';
 
 // Import Pages
 import Home from './pages/Home';
@@ -24,7 +25,7 @@ const Navigation = () => {
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
                         <Link to="/" className="text-2xl font-bold text-emerald-600 flex items-center">
-                            <span className="mr-2">🌿</span>
+                            <FaLeaf className="mr-2" />
                             CropWizard
                         </Link>
                     </div>

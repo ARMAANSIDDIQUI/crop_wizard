@@ -1,0 +1,57 @@
+# General
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+instance/
+.pytest_cache/
+catboost_info/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# ML Artifacts (Large Files - keeping generic csv/pkl ignored, can be force added if critical)
+*.pkl
+*.h5
+*.model
+grand_crop_data_monthly.csv
+grand_crop_data_noisy.csv
+model_approach.txt
+# Ignore large generated CSVs but maybe keep small ones? For now, list known generated files.
+confusion_matrix.png
+
+# Backend
+backend/instance/
+backend/migrations/
+backend/db.sqlite3
+
+# Frontend
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+frontend/build/

@@ -56,7 +56,26 @@ def main():
     print(f"Test Accuracy:  {test_acc*100:.2f}%")
     
     print("\nClassification Report:")
+    report = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
     print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+    # --- Generate Precision Matrix (Confusion Matrix) ---
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix
+    import seaborn as sns
+
+    print("\nGenering Confusion Matrix...")
+    cm = confusion_matrix(y_test, y_pred)
+    
+    plt.figure(figsize=(14, 12))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=le.classes_, yticklabels=le.classes_)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title(f'Confusion Matrix\nAccuracy: {test_acc*100:.2f}%', fontsize=16)
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig('confusion_matrix.png')
+    print("Confusion matrix saved as 'confusion_matrix.png'")
 
 if __name__ == "__main__":
     main()

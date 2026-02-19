@@ -10,11 +10,15 @@ const historySchema = new mongoose.Schema({
     phosphorus: Number,
     potassium: Number,
     ph: Number,
-    rainfall: Number,
-    temperature: Number,
+    rainfall: [Number],
+    temperature: [Number],
+    humidity: [Number],
     predictions: [{
         crop: { type: String, required: true },
-        probability: Number
+        probability: Number,
+        season: String,
+        duration: String,
+        water_needs: String
     }],
 }, {
     timestamps: true, // Adds createdAt and updatedAt timestamps

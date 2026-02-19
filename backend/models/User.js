@@ -12,6 +12,19 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+    },
+    predictionLimit: {
+        type: Number,
+        default: 5,
+    },
+    predictionCount: {
+        type: Number,
+        default: 0,
+    },
 }, {
     timestamps: true,
 });

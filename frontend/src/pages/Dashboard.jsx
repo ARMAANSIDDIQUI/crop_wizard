@@ -4,37 +4,117 @@ import axios from 'axios';
 // Mock child component for displaying prediction history
 const History = ({ history }) => {
     if (!history.length) {
-        return <p className="text-gray-500">No predictions made yet.</p>;
+        return <p className="text-gray-500 text-center mt-8">No predictions made yet. Start by entering climate data above.</p>;
     }
 
     return (
-        <div className="mt-8">
-            <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Prediction History</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mt-12">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Prediction History</h3>
+            <div className="grid grid-cols-1 gap-8">
                 {history.map((item) => (
-                    <div key={item._id} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1">
-                        <div className="mb-4">
-                            <h4 className="font-bold text-gray-800 mb-2">Top Recommendations:</h4>
-                            {item.predictions && item.predictions.length > 0 ? (
-                                <ul className="space-y-1">
-                                    {item.predictions.map((pred, idx) => (
-                                        <li key={idx} className={`flex justify-between items-center ${idx === 0 ? 'text-emerald-600 font-bold' : 'text-gray-600'}`}>
-                                            <span className="capitalize">{pred.crop}</span>
-                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{pred.probability}%</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-lg font-semibold text-emerald-600 capitalize">{item.predicted_crop}</p>
-                            )}
+                    <div key={item._id} className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                        {/* Header Section */}
+                        <div className="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex justify-between items-center flex-wrap gap-2">
+                            <span className="text-sm text-emerald-800 font-semibold">
+                                Predicted on: {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString()}
+                            </span>
+                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                                ID: {item._id.slice(-6)}
+                            </span>
                         </div>
-                        <p className="text-sm text-gray-500">Nitrogen: <span className="font-medium text-gray-700">{item.nitrogen}</span></p>
-                        <p className="text-sm text-gray-500">Phosphorus: <span className="font-medium text-gray-700">{item.phosphorus}</span></p>
-                        <p className="text-sm text-gray-500">Potassium: <span className="font-medium text-gray-700">{item.potassium}</span></p>
-                        <p className="text-sm text-gray-500">pH: <span className="font-medium text-gray-700">{item.ph}</span></p>
-                        <p className="text-sm text-gray-500">Rainfall: <span className="font-medium text-gray-700">{item.rainfall} mm</span></p>
-                        <p className="text-sm text-gray-500">Temperature: <span className="font-medium text-gray-700">{item.temperature}°C</span></p>
-                        <p className="text-xs text-gray-400 mt-4">Predicted on: {new Date(item.createdAt).toLocaleDateString()}</p>
+
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Input Summary */}
+                            <div className="lg:col-span-1 space-y-3 border-r lg:border-r-gray-100 lg:pr-6">
+                                <h4 className="font-bold text-gray-700 border-b pb-2 mb-2">Input Parameters</h4>
+                                <div className="grid grid-cols-2 gap-y-2 text-sm">
+                                    <div className="text-gray-500">Nitrogen:</div><div className="font-medium">{item.nitrogen}</div>
+                                    <div className="text-gray-500">Phosphorus:</div><div className="font-medium">{item.phosphorus}</div>
+                                    <div className="text-gray-500">Potassium:</div><div className="font-medium">{item.potassium}</div>
+                                    <div className="text-gray-500">pH Level:</div><div className="font-medium">{item.ph}</div>
+                                    <div className="text-gray-500">Soil Type:</div><div className="font-medium">{item.soil_type || 'N/A'}</div>
+                                    <div className="text-gray-500">State:</div><div className="font-medium">{item.state || 'N/A'}</div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-100 text-sm space-y-2">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Avg Rainfall:</span>
+                                        <span className="font-medium">
+                                            {Array.isArray(item.rainfall)
+                                                ? (item.rainfall.reduce((a, b) => Number(a) + Number(b), 0) / item.rainfall.length).toFixed(1)
+                                                : item.rainfall} mm
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Avg Temp:</span>
+                                        <span className="font-medium">
+                                            {Array.isArray(item.temperature)
+                                                ? (item.temperature.reduce((a, b) => Number(a) + Number(b), 0) / item.temperature.length).toFixed(1)
+                                                : item.temperature}°C
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Avg Humidity:</span>
+                                        <span className="font-medium">
+                                            {Array.isArray(item.humidity)
+                                                ? (item.humidity.reduce((a, b) => Number(a) + Number(b), 0) / item.humidity.length).toFixed(1)
+                                                : item.humidity}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Prediction Results */}
+                            <div className="lg:col-span-2">
+                                <h4 className="font-bold text-emerald-800 border-b pb-2 mb-4">Recommended Crops</h4>
+                                {item.predictions && item.predictions.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Top Prediction */}
+                                        <div className="md:col-span-2 bg-emerald-100 p-4 rounded-lg border border-emerald-200">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Top Choice</span>
+                                                    <h5 className="text-xl font-bold text-emerald-900 capitalize mt-1">{item.predictions[0].crop}</h5>
+                                                </div>
+                                                <span className="bg-emerald-600 text-white text-sm font-bold px-3 py-1 rounded-full">
+                                                    {item.predictions[0].probability}% Match
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2 mt-3 text-sm text-emerald-800">
+                                                <div className="bg-white/60 p-2 rounded">
+                                                    <span className="block text-xs text-emerald-600 font-semibold">Season</span>
+                                                    {item.predictions[0].season || 'N/A'}
+                                                </div>
+                                                <div className="bg-white/60 p-2 rounded">
+                                                    <span className="block text-xs text-emerald-600 font-semibold">Duration</span>
+                                                    {item.predictions[0].duration || 'N/A'}
+                                                </div>
+                                                <div className="bg-white/60 p-2 rounded">
+                                                    <span className="block text-xs text-emerald-600 font-semibold">Water</span>
+                                                    {item.predictions[0].water_needs || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Secondary Predictions */}
+                                        {item.predictions.slice(1).map((pred, idx) => (
+                                            <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h6 className="font-bold text-gray-700 capitalize">{pred.crop}</h6>
+                                                    <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-semibold">{pred.probability}%</span>
+                                                </div>
+                                                <div className="text-xs text-gray-500 space-y-1">
+                                                    <p>Season: {pred.season || '-'}</p>
+                                                    <p>Duration: {pred.duration || '-'}</p>
+                                                    <p>Water: {pred.water_needs || '-'}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500 italic">No detailed predictions available.</div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -44,31 +124,36 @@ const History = ({ history }) => {
 
 
 const soilTypes = [
-    "Alluvial", "Arid", "Black", "Clay", "Clay Loam", "Laterite", "Loam", "Loamy", 
+    "Alluvial", "Arid", "Black", "Clay", "Clay Loam", "Laterite", "Loam", "Loamy",
     "Red Sandy", "Saline", "Sandy", "Sandy Loam", "Silt Loam", "Volcanic", "Well-drained"
 ];
 
 const states = [
-    "Bihar", "Gujarat", "Himachal Pradesh", "Jammu & Kashmir", "Ladakh", "Madhya Pradesh", 
+    "Bihar", "Gujarat", "Himachal Pradesh", "Jammu & Kashmir", "Ladakh", "Madhya Pradesh",
     "Maharashtra", "Odisha", "Punjab", "Rajasthan", "Uttar Pradesh", "West Bengal"
 ];
+
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const Dashboard = () => {
     const [prediction, setPrediction] = useState(null);
     const [history, setHistory] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Initial state: arrays for monthly data, empty strings for others
     const [formData, setFormData] = useState({
         nitrogen: '',
         phosphorus: '',
         potassium: '',
         ph: '',
-        rainfall: '',
-        temperature: '',
         moisture: '',
-        humidity: '',
-        soil_type: '',
         state: '',
+        soil_type: '',
+        // Initialize with 12 empty strings/zeros
+        rainfall: Array(12).fill(''),
+        temperature: Array(12).fill(''),
+        humidity: Array(12).fill('')
     });
 
     const fetchHistory = async () => {
@@ -91,42 +176,61 @@ const Dashboard = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // Handler for monthly array inputs
+    const handleMonthlyChange = (index, field, value) => {
+        const newArray = [...formData[field]];
+        newArray[index] = value;
+        setFormData({ ...formData, [field]: newArray });
+    };
+
+    const handleCopyAll = (field) => {
+        // Copies the value of Jan to all other months
+        const val = formData[field][0];
+        // Check if value is valid (not empty string, allow 0)
+        if (val !== '' && val !== null && val !== undefined) {
+            setFormData(prev => ({
+                ...prev,
+                [field]: Array(12).fill(val)
+            }));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Basic validation for monthly inputs
+        const isMonthlyValid = (arr) => arr.every(val => val !== '' && !isNaN(val));
+        if (!isMonthlyValid(formData.temperature) || !isMonthlyValid(formData.rainfall) || !isMonthlyValid(formData.humidity)) {
+            setError("Please fill in all 12 monthly values for Temperature, Rainfall, and Humidity.");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         setPrediction(null);
 
         try {
             const token = localStorage.getItem('token');
-            // The ML service now returns an array of predictions
             const mlResponse = await axios.post('/predict', { ...formData });
             const predictions = mlResponse.data;
             setPrediction(predictions);
-            
-            // Optimistically update local history so user sees it even if save fails
+
             const newHistoryItem = {
                 ...formData,
                 predictions: predictions,
-                _id: Date.now().toString(), // Temporary ID
+                _id: Date.now().toString(),
                 createdAt: new Date().toISOString()
             };
             setHistory(prev => [newHistoryItem, ...prev]);
 
             try {
-                await axios.post('/api/history', 
+                await axios.post('/api/history',
                     { ...formData, predictions: predictions },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                // If successful, we can fetch the official list to get the real ID, 
-                // but the local one is fine for now.
-                fetchHistory(); 
+                fetchHistory(); // Refresh to get real ID
             } catch (historyErr) {
                 console.error('Failed to save history:', historyErr);
-                if (historyErr.response && historyErr.response.status === 401) {
-                    // Optional: You could redirect to login here or just notify
-                     console.warn("Session expired or invalid token. History not saved.");
-                }
             }
 
         } catch (err) {
@@ -137,91 +241,164 @@ const Dashboard = () => {
         }
     };
 
+    const renderMonthlyInput = (label, field, unit) => (
+        <div className="col-span-1 md:col-span-2 bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
+            <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-emerald-800">{label} ({unit}) - Monthly</label>
+                <button
+                    type="button"
+                    onClick={() => handleCopyAll(field)}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 underline"
+                    title="Copy Jan value to all months"
+                >
+                    Copy Jan to All
+                </button>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {months.map((m, idx) => (
+                    <div key={m} className="flex flex-col">
+                        <span className="text-xs text-gray-500 mb-1">{m}</span>
+                        <input
+                            type="number"
+                            value={formData[field][idx]}
+                            onChange={(e) => handleMonthlyChange(idx, field, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500"
+                            placeholder="0"
+                            required
+                        />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
     return (
         <div className="bg-beige-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
                 <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-8">
                     <h2 className="text-3xl font-bold text-center text-emerald-700 mb-2">Crop Prediction Dashboard</h2>
-                    <p className="text-center text-gray-600 mb-8">Enter the details below to get a crop recommendation.</p>
-                    
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Numerical Inputs */}
-                        {['nitrogen', 'phosphorus', 'potassium', 'ph', 'rainfall', 'temperature', 'moisture', 'humidity'].map((key) => (
-                            <div key={key}>
-                                <label htmlFor={key} className="block text-sm font-medium text-gray-700 capitalize">{key.replace('_', ' ')}</label>
-                                <input
-                                    type="number"
-                                    name={key}
-                                    id={key}
-                                    value={formData[key]}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                                    required
-                                    step="any" // Allow decimal values
-                                />
-                            </div>
-                        ))}
+                    <p className="text-center text-gray-600 mb-8">Enter monthly climate details for accurate seasonal prediction.</p>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
                         
-                        {/* Categorical Inputs */}
-                        <div>
-                            <label htmlFor="soil_type" className="block text-sm font-medium text-gray-700">Soil Type</label>
-                            <select
-                                name="soil_type"
-                                id="soil_type"
-                                value={formData.soil_type}
-                                onChange={handleChange}
-                                className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                                required
-                            >
-                                <option value="" disabled>Select Soil Type</option>
-                                {soilTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                            </select>
+                        {/* Section 1: Soil Profile */}
+                        <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
+                            <h3 className="text-xl font-bold text-emerald-800 mb-4 border-b border-emerald-200 pb-2">1. Soil Profile</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {['nitrogen', 'phosphorus', 'potassium', 'ph', 'moisture'].map((key) => (
+                                    <div key={key}>
+                                        <label htmlFor={key} className="block text-sm font-medium text-gray-700 capitalize">
+                                            {key === 'ph' ? 'pH Level' : key}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name={key}
+                                            id={key}
+                                            value={formData[key]}
+                                            onChange={handleChange}
+                                            className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                            required
+                                            step="any"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                ))}
+
+                                <div>
+                                    <label htmlFor="soil_type" className="block text-sm font-medium text-gray-700">Soil Type</label>
+                                    <select
+                                        name="soil_type"
+                                        id="soil_type"
+                                        value={formData.soil_type}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                        required
+                                    >
+                                        <option value="" disabled>Select Soil Type</option>
+                                        {soilTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
-                            <select
-                                name="state"
-                                id="state"
-                                value={formData.state}
-                                onChange={handleChange}
-                                className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                                required
-                            >
-                                <option value="" disabled>Select State</option>
-                                {states.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                        {/* Section 2: Atmospheric Conditions */}
+                        <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                            <div className="flex justify-between items-center border-b border-blue-200 pb-2 mb-4">
+                                <h3 className="text-xl font-bold text-blue-800">2. Atmospheric Conditions</h3>
+                                <div className="w-1/3 min-w-[200px]">
+                                    <select
+                                        name="state"
+                                        id="state"
+                                        value={formData.state}
+                                        onChange={handleChange}
+                                        className="block w-full px-3 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                        required
+                                    >
+                                        <option value="" disabled>Select Region / State</option>
+                                        {states.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-6">
+                                {renderMonthlyInput('Temperature', 'temperature', '°C')}
+                                {renderMonthlyInput('Rainfall', 'rainfall', 'mm')}
+                                {renderMonthlyInput('Humidity', 'humidity', '%')}
+                            </div>
                         </div>
 
-                        <div className="md:col-span-2 text-center">
+                        <div className="text-center pt-4">
                             <button
                                 type="submit"
-                                className="w-full md:w-auto inline-flex justify-center py-3 px-8 border border-transparent shadow-lg text-sm font-medium rounded-full text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-transform transform hover:scale-105"
+                                className="w-full md:w-1/2 inline-flex justify-center py-4 px-8 border border-transparent shadow-xl text-lg font-bold rounded-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-4 focus:ring-emerald-500 transition-all transform hover:scale-105"
                                 disabled={loading}
                             >
-                                {loading ? 'Thinking...' : 'Predict Crop'}
+                                {loading ? 'Analyzing Soil & Climate...' : 'Get Crop Recommendations'}
                             </button>
                         </div>
                     </form>
 
                     {error && <p className="mt-6 text-center text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
-                    
+
                     {prediction && (
                         <div className="mt-8 text-center bg-emerald-100 p-6 rounded-xl shadow-inner">
                             <h3 className="text-2xl font-semibold text-emerald-800">Top Recommendations</h3>
                             <div className="mt-4">
-                                {/* Main Prediction */}
-                                <div className="bg-emerald-200 p-4 rounded-lg shadow-md">
-                                    <p className="text-xl font-bold text-emerald-900 capitalize">{prediction[0].crop}</p>
-                                    <p className="text-md text-emerald-700">Confidence: {prediction[0].probability}%</p>
+                                <div className="bg-emerald-200 p-6 rounded-lg shadow-md border border-emerald-300">
+                                    <p className="text-3xl font-bold text-emerald-900 capitalize mb-2">{prediction[0].crop}</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-emerald-800 mt-4">
+                                        <div className="bg-white/50 p-2 rounded">
+                                            <span className="block font-bold">Confidence</span>
+                                            {prediction[0].probability}%
+                                        </div>
+                                        <div className="bg-white/50 p-2 rounded">
+                                            <span className="block font-bold">Season</span>
+                                            {prediction[0].season}
+                                        </div>
+                                        <div className="bg-white/50 p-2 rounded">
+                                            <span className="block font-bold">Duration</span>
+                                            {prediction[0].duration}
+                                        </div>
+                                        <div className="bg-white/50 p-2 rounded">
+                                            <span className="block font-bold">Water Needs</span>
+                                            {prediction[0].water_needs}
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                {/* Alternatives */}
-                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <h4 className="text-lg font-semibold text-emerald-700 mt-6 mb-3">Alternative Options</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {prediction.slice(1).map((item, index) => (
-                                        <div key={index} className="bg-white p-3 rounded-lg shadow-sm">
-                                            <p className="text-lg font-semibold text-gray-800 capitalize">{item.crop}</p>
-                                            <p className="text-sm text-gray-600">Confidence: {item.probability}%</p>
+                                        <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-emerald-100 hover:shadow-md transition-shadow text-left">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <p className="text-lg font-bold text-gray-800 capitalize">{item.crop}</p>
+                                                <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">{item.probability}%</span>
+                                            </div>
+                                            <div className="text-xs text-gray-600 space-y-1">
+                                                <p><span className="font-semibold">Season:</span> {item.season}</p>
+                                                <p><span className="font-semibold">Duration:</span> {item.duration}</p>
+                                                <p><span className="font-semibold">Water:</span> {item.water_needs}</p>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -235,6 +412,5 @@ const Dashboard = () => {
         </div>
     );
 };
-
 
 export default Dashboard;

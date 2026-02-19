@@ -7,15 +7,21 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import BlogList from './pages/BlogList';
+import BlogDetail from './pages/BlogDetail';
+import AdminBlog from './pages/AdminBlog';
+import AdminUsers from './pages/AdminUsers';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // A simple navigation component to be used in the layout
 const Navigation = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('role');
         navigate('/login');
     };
 
@@ -32,9 +38,17 @@ const Navigation = () => {
                     <div className="hidden md:block">
                         <div className="ml-10 flex items-baseline space-x-4">
                             <Link to="/" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</Link>
+                            <Link to="/blog" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Blog</Link>
+                            
                             {token ? (
                                 <>
                                     <Link to="/dashboard" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</Link>
+                                    {role === 'admin' && (
+                                        <>
+                                            <Link to="/admin/blog" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Admin Blog</Link>
+                                            <Link to="/admin/users" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Admin Users</Link>
+                                        </>
+                                    )}
                                     <button onClick={handleLogout} className="bg-red-500 text-white hover:bg-red-600 px-3 py-2 rounded-md text-sm font-medium">Logout</button>
                                 </>
                             ) : (
@@ -60,10 +74,14 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/blog" element={<BlogList />} />
+                    <Route path="/blog/:id" element={<BlogDetail />} />
                     
-                    {/* Protected Route for Dashboard */}
+                    {/* Protected Route for Dashboard and Admin */}
                     <Route element={<ProtectedRoute />}>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/admin/blog" element={<AdminBlog />} />
+                        <Route path="/admin/users" element={<AdminUsers />} />
                     </Route>
                 </Routes>
             </main>

@@ -50,22 +50,44 @@ def predict():
     try:
         data = request.get_json()
         
-        # The model expects columns in this order:
-        # 'N', 'P', 'K', 'pH', 'Moisture', 'Temperature', 'Rainfall', 'Humidity', 'Soil_Type', 'State'
+        # The model expects monthly columns: Temp_Jan...Dec, Rain_Jan...Dec, Hum_Jan...Dec
+        # followed by Soil_Type, State
         
-        # Create a DataFrame from the input data with the correct column names and order
-        feature_df = pd.DataFrame({
-            'N': [float(data['nitrogen'])],
-            'P': [float(data['phosphorus'])],
-            'K': [float(data['potassium'])],
-            'pH': [float(data['ph'])],
-            'Moisture': [float(data['moisture'])],
-            'Temperature': [float(data['temperature'])],
-            'Rainfall': [float(data['rainfall'])],
-            'Humidity': [float(data['humidity'])],
-            'Soil_Type': [data['soil_type']],
-            'State': [data['state']]
-        })
+        input_data = {}
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        # Helper to process monthly inputs (expecting lists of 12)
+        def process_monthly(key, prefix):
+            values = data.get(key)
+            if not isinstance(values, list) or len(values) != 12:
+                # Fallback: if scalar, repeat for all months (or error handle)
+                # print(f"Warning: {key} is not a list of 12. Using as scalar/average.")
+                val = float(values) if values else 0.0
+                return {f'{prefix}_{m}': val for m in months}
+            return {f'{prefix}_{m}': float(v) for m, v in zip(months, values)}
+
+        # 1. Standard Inputs
+        input_data['N'] = float(data['nitrogen'])
+        input_data['P'] = float(data['phosphorus'])
+        input_data['K'] = float(data['potassium'])
+        input_data['pH'] = float(data['ph'])
+        input_data['Moisture'] = float(data['moisture'])
+        
+        # 2. Monthly Inputs
+        input_data.update(process_monthly('temperature', 'Temp'))
+        input_data.update(process_monthly('rainfall', 'Rain'))
+        input_data.update(process_monthly('humidity', 'Hum'))
+        
+        # 3. Categorical
+        input_data['Soil_Type'] = data['soil_type']
+        input_data['State'] = data['state']
+
+        # Determine column order dynamically or hardcode if strict
+        # Model pipeline usually handles dict->df conversion if cols match, 
+        # but to be safe we should match the training DF order if possible.
+        # However, the pipeline uses column transformers which leverage column names.
+        
+        feature_df = pd.DataFrame([input_data])
 
         # Use predict_proba to get the probabilities for each crop
         prediction_probabilities = model.predict_proba(feature_df)
@@ -78,12 +100,99 @@ def predict():
         top3_probabilities = prediction_probabilities[0][top3_indices]
         top3_crop_names = label_encoder.inverse_transform(top3_indices)
         
+        
+        # Crop Information Dictionary - Updated with English seasons
+        CROP_INFO = {
+            'Rice': {'type': 'Monsoon', 'water': 'High', 'duration': '120-150 days'},
+            'Maize': {'type': 'Monsoon', 'water': 'Medium', 'duration': '90-110 days'},
+            'Jute': {'type': 'Monsoon', 'water': 'High', 'duration': '120 days'},
+            'Cotton': {'type': 'Monsoon', 'water': 'Medium', 'duration': '150-180 days'},
+            'Coconut': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Papaya': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Orange': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Apple': {'type': 'Winter', 'water': 'Medium', 'duration': 'Perennial'},
+            'Muskmelon': {'type': 'Summer', 'water': 'Low', 'duration': '60-80 days'},
+            'Watermelon': {'type': 'Summer', 'water': 'Low', 'duration': '70-90 days'},
+            'Grapes': {'type': 'Winter', 'water': 'Low', 'duration': 'Perennial'},
+            'Mango': {'type': 'Summer', 'water': 'Medium', 'duration': 'Perennial'},
+            'Banana': {'type': 'Year-Round', 'water': 'High', 'duration': '12-14 months'},
+            'Pomegranate': {'type': 'Year-Round', 'water': 'Low', 'duration': 'Perennial'},
+            'Lentil': {'type': 'Winter', 'water': 'Low', 'duration': '90-120 days'},
+            'Blackgram': {'type': 'Monsoon', 'water': 'Medium', 'duration': '70-85 days'},
+            'Mungbean': {'type': 'Summer', 'water': 'Low', 'duration': '60-70 days'},
+            'Mothbeans': {'type': 'Monsoon', 'water': 'Low', 'duration': '75-90 days'},
+            'Pigeonpeas': {'type': 'Monsoon', 'water': 'Medium', 'duration': '140-180 days'},
+            'Kidneybeans': {'type': 'Winter', 'water': 'Medium', 'duration': '90-120 days'},
+            'Chickpea': {'type': 'Winter', 'water': 'Low', 'duration': '90-110 days'},
+            'Coffee': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Cashew': {'type': 'Year-Round', 'water': 'Low', 'duration': 'Perennial'},
+            'Raisins': {'type': 'Winter', 'water': 'Low', 'duration': 'Perennial'},
+            'Dates': {'type': 'Year-Round', 'water': 'Very Low', 'duration': 'Perennial'},
+            'Marigold': {'type': 'Year-Round', 'water': 'Medium', 'duration': '60-70 days'},
+            'Tuberose': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Arecanut': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Ashwagandha': {'type': 'Winter', 'water': 'Low', 'duration': '150-180 days'},
+            'Ginger': {'type': 'Monsoon', 'water': 'High', 'duration': '8-9 months'},
+            'Turmeric': {'type': 'Monsoon', 'water': 'High', 'duration': '8-9 months'},
+            'Garlic': {'type': 'Winter', 'water': 'Medium', 'duration': '120-150 days'},
+            'Onion': {'type': 'Winter', 'water': 'Medium', 'duration': '100-120 days'},
+            'Potato': {'type': 'Winter', 'water': 'Medium', 'duration': '90-120 days'},
+            'Tomato': {'type': 'Winter', 'water': 'Medium', 'duration': '90-100 days'},
+            'Brinjal': {'type': 'Year-Round', 'water': 'Medium', 'duration': '100-120 days'},
+            'Chilli': {'type': 'Year-Round', 'water': 'Medium', 'duration': '90-120 days'},
+            'Capsicum': {'type': 'Winter', 'water': 'Medium', 'duration': '90-100 days'},
+            'Cucumber': {'type': 'Summer', 'water': 'High', 'duration': '60-70 days'},
+            'Bottle Gourd': {'type': 'Summer', 'water': 'High', 'duration': '60-70 days'},
+            'Bitter Gourd': {'type': 'Summer', 'water': 'High', 'duration': '60-70 days'},
+            'Pumpkin': {'type': 'Summer', 'water': 'Medium', 'duration': '90-100 days'},
+            'Okra': {'type': 'Monsoon', 'water': 'Medium', 'duration': '60-70 days'},
+            'Cabbage': {'type': 'Winter', 'water': 'Medium', 'duration': '90-120 days'},
+            'Cauliflower': {'type': 'Winter', 'water': 'Medium', 'duration': '90-120 days'},
+            'Carrot': {'type': 'Winter', 'water': 'Medium', 'duration': '80-100 days'},
+            'Radish': {'type': 'Winter', 'water': 'Medium', 'duration': '40-60 days'},
+            'Beetroot': {'type': 'Winter', 'water': 'Medium', 'duration': '80-100 days'},
+            'Spinach': {'type': 'Winter', 'water': 'Medium', 'duration': '30-45 days'},
+            'Fenugreek': {'type': 'Winter', 'water': 'Medium', 'duration': '30-45 days'},
+            'Coriander': {'type': 'Winter', 'water': 'Medium', 'duration': '40-60 days'},
+            'Mint': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Tulsi': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Aloe Vera': {'type': 'Year-Round', 'water': 'Very Low', 'duration': 'Perennial'},
+            'Stevia': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Lemongrass': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Citronella': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Palmarosa': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Menthol': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Geranium': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Patchouli': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Davana': {'type': 'Winter', 'water': 'Low', 'duration': '110-120 days'},
+            'Vanilla': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Cardamom': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Clove': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Nutmeg': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Cinnamon': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Black Pepper': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Rubber': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Tea': {'type': 'Year-Round', 'water': 'High', 'duration': 'Perennial'},
+            'Almond': {'type': 'Winter', 'water': 'Medium', 'duration': 'Perennial'},
+            'Guava': {'type': 'Year-Round', 'water': 'Medium', 'duration': 'Perennial'},
+            'Fig': {'type': 'Year-Round', 'water': 'Low', 'duration': 'Perennial'},
+            'Apricot': {'type': 'Winter', 'water': 'Medium', 'duration': 'Perennial'},
+            'Pistachio': {'type': 'Year-Round', 'water': 'Low', 'duration': 'Perennial'},
+            'Walnut': {'type': 'Winter', 'water': 'Medium', 'duration': 'Perennial'}
+        }
+
         # Format the response
         predictions = []
         for i in range(3):
+            crop_name = top3_crop_names[i]
+            # Use .strip() to handle potential whitespace issues
+            info = CROP_INFO.get(crop_name.strip(), {'type': 'Unknown', 'water': 'Medium', 'duration': 'N/A'})
             predictions.append({
-                'crop': top3_crop_names[i],
-                'probability': round(top3_probabilities[i] * 100, 2)
+                'crop': crop_name,
+                'probability': round(top3_probabilities[i] * 100, 2),
+                'season': info['type'],
+                'duration': info['duration'],
+                'water_needs': info['water']
             })
             
         return jsonify(predictions)
@@ -94,4 +203,4 @@ def predict():
         return jsonify({'error': f'An error occurred during prediction: {str(e)}'}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)

@@ -1,135 +1,134 @@
 import pandas as pd
 import numpy as np
-
 import joblib
 import xgboost as xgb
 from catboost import CatBoostClassifier
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, classification_report
 import os
 
 # --- CONFIGURATION ---
-CSV_FILENAME = "grand_crop_data_noisy.csv"
+CSV_FILENAME = "grand_crop_data_monthly.csv"
 MODEL_FILENAME = "grand_crop_model.pkl"
 ENCODER_FILENAME = "label_encoder.pkl"
 
-print(f"Loading data from {CSV_FILENAME}...")
+def main():
+    print(f"Loading data from {CSV_FILENAME}...")
 
-# --- 1. LOAD DATA ---
-if not os.path.exists(CSV_FILENAME):
-    print(f"Error: {CSV_FILENAME} not found in the current directory.")
-    print("   Please ensure the CSV file is in the same folder as this script.")
-    exit()
+    if not os.path.exists(CSV_FILENAME):
+        print(f"Error: {CSV_FILENAME} not found.")
+        return
 
-df = pd.read_csv(CSV_FILENAME)
-print(f"Data Loaded. Shape: {df.shape}")
+    df = pd.read_csv(CSV_FILENAME)
+    print(f"Data Loaded. Shape: {df.shape}")
 
-# --- 2. PREPARE DATA ---
-# Ensure your CSV has a 'Target' column (Crop Name)
-if 'Target' not in df.columns:
-    print("Error: 'Target' column not found in CSV.")
-    exit()
+    # --- PREPARE DATA ---
+    if 'Target' not in df.columns:
+        print("Error: 'Target' column not found.")
+        return
 
-X = df.drop(['Target'], axis=1)
-y = df['Target']
+    X = df.drop(['Target'], axis=1)
+    y = df['Target']
 
-# Encode Targets
-le = LabelEncoder()
-y_enc = le.fit_transform(y)
-class_names = le.classes_
+    # Encode Targets
+    le = LabelEncoder()
+    y_enc = le.fit_transform(y)
+    class_names = le.classes_
 
-# Split (Standard 80/20)
-print("\nTraining High-Accuracy Ensemble (CatBoost + XGBoost + Ridge + Lasso + RF)...")
-X_train, X_test, y_train, y_test = train_test_split(X, y_enc, test_size=0.2, random_state=42, stratify=y_enc)
+    # Split
+    print("Splitting data (80% Train, 20% Test)...")
+    X_train, X_test, y_train, y_test = train_test_split(X, y_enc, test_size=0.2, random_state=42, stratify=y_enc)
 
-# --- 3. DEFINE PIPELINE ---
-# Identifies Categorical vs Numerical columns automatically based on the input CSV
-cat_cols = X.select_dtypes(include=['object']).columns.tolist()
-num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    # --- DEFINE PIPELINE ---
+    cat_cols = X.select_dtypes(include=['object']).columns.tolist()
+    num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
 
-print(f"   Categorical Columns: {cat_cols}")
-print(f"   Numerical Columns: {num_cols}")
+    print(f"Categorical Columns: {cat_cols}")
+    print(f"Numerical Columns: {len(num_cols)} columns")
 
-preprocessor = ColumnTransformer([
-    ('num', StandardScaler(), num_cols),
-    ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
-])
+    preprocessor = ColumnTransformer([
+        ('num', StandardScaler(), num_cols),
+        ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
+    ])
 
-# Models: CatBoost + XGBoost + Ridge + Lasso + Random Forest
-# Regularization & Bagging added to reduce overfitting
-# Reduced iterations/estimators for faster diagnostic run
-clf_cat = CatBoostClassifier(iterations=200, learning_rate=0.05, depth=6, verbose=0, random_state=42)
-clf_xgb = xgb.XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, random_state=42)
-clf_ridge = LogisticRegression(penalty='l2', max_iter=1000, random_state=42, solver='lbfgs')  # Ridge
-clf_lasso = LogisticRegression(penalty='l1', max_iter=1000, random_state=42, solver='liblinear') # Lasso
-clf_rf = RandomForestClassifier(n_estimators=100, max_depth=8, random_state=42) # Bagging
+    # Ensemble Models
+    # CatBoost - Stronger regularization
+    clf_cat = CatBoostClassifier(
+        iterations=100, 
+        learning_rate=0.1, 
+        depth=6, 
+        l2_leaf_reg=3,       # Increased L2 regularization
+        subsample=0.8,       # Bagging
+        bootstrap_type='Bernoulli', # Required for subsample
+        verbose=0, 
+        random_state=42, 
+        allow_writing_files=False
+    )
+    
+    # XGBoost - Stronger regularization
+    clf_xgb = xgb.XGBClassifier(
+        n_estimators=100, 
+        learning_rate=0.1, 
+        max_depth=6, 
+        reg_lambda=10,       # L2 regularization
+        subsample=0.8,       # Row sampling
+        colsample_bytree=0.8,# Column sampling
+        random_state=42, 
+        eval_metric='mlogloss'
+    )
+    
+    # Random Forest - Pruning to prevent memorization
+    clf_rf = RandomForestClassifier(
+        n_estimators=100, 
+        max_depth=10, 
+        min_samples_leaf=2,  # Prevent isolating outliers
+        random_state=42
+    )
 
-voting_clf = VotingClassifier(
-    estimators=[
-        ('cat', clf_cat),
-        ('xgb', clf_xgb),
-        ('ridge', clf_ridge),
-        ('lasso', clf_lasso),
-        ('rf', clf_rf)
-    ],
-    voting='soft'
-)
+    voting_clf = VotingClassifier(
+        estimators=[
+            ('cat', clf_cat),
+            ('xgb', clf_xgb),
+            ('rf', clf_rf)
+        ],
+        voting='soft'
+    )
 
-pipeline = Pipeline([
-    ('prep', preprocessor),
-    ('model', voting_clf)
-])
+    pipeline = Pipeline([
+        ('prep', preprocessor),
+        ('model', voting_clf)
+    ])
 
-# --- 4. TRAIN & VALIDATE ---
-# Cross-Validation to check for Overfitting
-print("\nRunning 3-Fold Cross-Validation (this may take a moment)...")
-cv_scores = cross_val_score(pipeline, X_train, y_train, cv=3, scoring='accuracy')
+    # --- TRAIN & EVALUATE ---
+    print("\nTraining Ensemble Model (Simplified for Speed)...")
+    pipeline.fit(X_train, y_train)
 
-print(f"   Cross-Validation Scores: {cv_scores}")
-print(f"   Mean CV Accuracy: {cv_scores.mean()*100:.2f}% (+/- {cv_scores.std()*100:.2f}%)")
+    print("Evaluating on Test Set...")
+    y_pred = pipeline.predict(X_test)
+    test_acc = accuracy_score(y_test, y_pred)
+    
+    y_train_pred = pipeline.predict(X_train)
+    train_acc = accuracy_score(y_train, y_train_pred)
 
-pipeline.fit(X_train, y_train)
+    print(f"\n--- RESULTS ---")
+    print(f"Train Accuracy: {train_acc*100:.2f}%")
+    print(f"Test Accuracy:  {test_acc*100:.2f}%")
+    
+    if train_acc - test_acc > 0.05:
+        print("WARNING: Potential Overfitting.")
+    else:
+        print("STATUS: Model generalizes well.")
 
-# --- 5. EVALUATE ---
-y_pred = pipeline.predict(X_test)
-train_pred = pipeline.predict(X_train)
+    # Save
+    print(f"\nSaving model to {MODEL_FILENAME}...")
+    joblib.dump(pipeline, MODEL_FILENAME)
+    joblib.dump(le, ENCODER_FILENAME)
+    print("Model saved successfully.")
 
-train_acc = accuracy_score(y_train, train_pred)
-test_acc = accuracy_score(y_test, y_pred)
-
-print(f"\n--- OVERFITTING CHECK ---")
-print(f"Train Accuracy: {train_acc*100:.2f}%")
-print(f"Test Accuracy:  {test_acc*100:.2f}%")
-if train_acc - test_acc > 0.05:
-    print("WARNING: Possible Overfitting detected (Train > Test by > 5%)")
-else:
-    print("STATUS: Model generalizes well.")
-
-print(f"\nFINAL TEST ACCURACY: {test_acc*100:.2f}%")
-
-# Classification Report
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred, target_names=class_names))
-
-# Visualize Results
-# cm = confusion_matrix(y_test, y_pred)
-# disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
-# fig, ax = plt.subplots(figsize=(12, 10))
-# disp.plot(cmap="viridis", xticks_rotation=90, ax=ax)
-# plt.title(f"Model Performance\nAccuracy: {test_acc:.4f}")
-# plt.tight_layout()
-# plt.savefig('confusion_matrix.png')
-# plt.show()
-
-# --- 6. SAVE FILES LOCALLY ---
-joblib.dump(pipeline, MODEL_FILENAME)
-joblib.dump(le, ENCODER_FILENAME)
-
-print(f"\nTraining Complete. Files saved locally:")
-print(f"   - {MODEL_FILENAME}")
-print(f"   - {ENCODER_FILENAME}")
+if __name__ == "__main__":
+    main()

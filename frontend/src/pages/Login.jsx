@@ -29,6 +29,7 @@ export default function Login() {
 
             // On success, save token and redirect
             localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role || 'user');
             navigate('/dashboard');
 
         } catch (err) {

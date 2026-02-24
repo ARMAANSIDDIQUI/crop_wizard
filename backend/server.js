@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -41,8 +43,6 @@ const upload = multer({ storage: storage });
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     family: 4
 })
     .then(() => console.log('MongoDB connected'))

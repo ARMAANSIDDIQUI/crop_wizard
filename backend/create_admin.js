@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 require('dotenv').config();
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const createAdmin = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             family: 4 // Force IPv4
         });
         console.log('MongoDB connected');

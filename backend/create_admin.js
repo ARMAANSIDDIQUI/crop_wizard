@@ -7,6 +7,7 @@ const createAdmin = async () => {
         await mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            family: 4 // Force IPv4
         });
         console.log('MongoDB connected');
 

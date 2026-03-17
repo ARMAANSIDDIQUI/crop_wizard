@@ -9,13 +9,15 @@ from sklearn.model_selection import train_test_split, cross_val_score, Stratifie
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_score
 import os
 
 # --- CONFIGURATION ---
-CSV_FILENAME = "grand_crop_data_monthly.csv"
-MODEL_FILENAME = "grand_crop_model.pkl"
-ENCODER_FILENAME = "label_encoder.pkl"
+CSV_FILENAME = "grand_crop_data_temp_monthly.csv"
+MODEL_FILENAME = "grand_crop_model_temp_monthly.pkl"
+ENCODER_FILENAME = "label_encoder_temp_monthly.pkl"
 
 def main():
     print(f"Loading data from {CSV_FILENAME}...")
@@ -57,36 +59,39 @@ def main():
     ])
 
     # Ensemble Models
-    # CatBoost - Stronger regularization
+    # CatBoost - Balanced regularization
     clf_cat = CatBoostClassifier(
-        iterations=100, 
+        iterations=150, 
         learning_rate=0.1, 
         depth=6, 
-        l2_leaf_reg=3,       # Increased L2 regularization
+        l2_leaf_reg=5,       # Moderate L2 regularization
         subsample=0.8,       # Bagging
-        bootstrap_type='Bernoulli', # Required for subsample
+        bootstrap_type='Bernoulli', 
         verbose=0, 
         random_state=42, 
         allow_writing_files=False
     )
     
-    # XGBoost - Stronger regularization
+    # XGBoost - Balanced regularization
     clf_xgb = xgb.XGBClassifier(
-        n_estimators=100, 
+        n_estimators=150, 
         learning_rate=0.1, 
         max_depth=6, 
-        reg_lambda=10,       # L2 regularization
+        reg_lambda=5,        # Moderate L2 regularization
+        reg_alpha=1,         # Low L1 regularization
         subsample=0.8,       # Row sampling
         colsample_bytree=0.8,# Column sampling
         random_state=42, 
         eval_metric='mlogloss'
     )
     
-    # Random Forest - Pruning to prevent memorization
+    # Random Forest - Balanced pruning
     clf_rf = RandomForestClassifier(
-        n_estimators=100, 
-        max_depth=10, 
-        min_samples_leaf=2,  # Prevent isolating outliers
+        n_estimators=150, 
+        max_depth=12,        # Deeper trees
+        min_samples_leaf=4,  # Moderate isolation prevention
+        min_samples_split=8,
+        max_features='sqrt',
         random_state=42
     )
 
@@ -123,6 +128,35 @@ def main():
         print("WARNING: Potential Overfitting.")
     else:
         print("STATUS: Model generalizes well.")
+        
+    print("\nGenerating evaluation metric images...")
+    
+    # Accuracy Plot
+    plt.figure(figsize=(8, 6))
+    sns.barplot(x=['Train Accuracy', 'Test Accuracy'], y=[train_acc, test_acc], palette=['skyblue', 'lightgreen'])
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy Score')
+    plt.ylim(0, 1.1)
+    for i, v in enumerate([train_acc, test_acc]):
+        plt.text(i, v + 0.02, f"{v*100:.2f}%", ha='center', va='bottom', fontweight='bold')
+    plt.savefig('accuracy_metrics.png')
+    plt.close()
+    
+    # Precision Matrix / Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    # Calculate precision for each class
+    # To plot precision matrix we use row-normalized CM (precision = true pos / predicted pos)
+    # Actually, calculating precision score and plotting it makes more sense, or just plotting cm
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(cm, annot=False, cmap='Blues', xticklabels=class_names, yticklabels=class_names)
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.xticks(rotation=90)
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.savefig('precision_matrix.png')
+    plt.close()
 
     # Save
     print(f"\nSaving model to {MODEL_FILENAME}...")

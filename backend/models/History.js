@@ -10,9 +10,9 @@ const historySchema = new mongoose.Schema({
     phosphorus: Number,
     potassium: Number,
     ph: Number,
-    rainfall: [Number],
+    rainfall: Number,
     temperature: [Number],
-    humidity: [Number],
+    humidity: Number,
     predictions: [{
         crop: { type: String, required: true },
         probability: Number,

@@ -19,8 +19,8 @@ def load_models():
         base_dir = os.path.dirname(os.path.abspath(__file__))
         print(f"DEBUG: Base directory: {base_dir}")
         
-        model_path = os.path.join(base_dir, 'grand_crop_model.pkl')
-        label_encoder_path = os.path.join(base_dir, 'label_encoder.pkl')
+        model_path = os.path.join(base_dir, 'grand_crop_model_temp_monthly.pkl')
+        label_encoder_path = os.path.join(base_dir, 'label_encoder_temp_monthly.pkl')
         
         print(f"DEBUG: Loading model from: {model_path}")
         print(f"DEBUG: Loading label encoder from: {label_encoder_path}")
@@ -71,12 +71,11 @@ def predict():
         input_data['P'] = float(data['phosphorus'])
         input_data['K'] = float(data['potassium'])
         input_data['pH'] = float(data['ph'])
-        input_data['Moisture'] = float(data['moisture'])
+        input_data['Humidity'] = float(data['humidity'])
+        input_data['Rainfall'] = float(data['rainfall'])
         
-        # 2. Monthly Inputs
+        # 2. Monthly Inputs (Only Temperature now)
         input_data.update(process_monthly('temperature', 'Temp'))
-        input_data.update(process_monthly('rainfall', 'Rain'))
-        input_data.update(process_monthly('humidity', 'Hum'))
         
         # 3. Categorical
         input_data['Soil_Type'] = data['soil_type']

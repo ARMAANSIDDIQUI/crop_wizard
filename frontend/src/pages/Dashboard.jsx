@@ -39,9 +39,7 @@ const History = ({ history }) => {
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Avg Rainfall:</span>
                                         <span className="font-medium">
-                                            {Array.isArray(item.rainfall)
-                                                ? (item.rainfall.reduce((a, b) => Number(a) + Number(b), 0) / item.rainfall.length).toFixed(1)
-                                                : item.rainfall} mm
+                                            {Number(item.rainfall).toFixed(1)} mm
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
@@ -49,15 +47,13 @@ const History = ({ history }) => {
                                         <span className="font-medium">
                                             {Array.isArray(item.temperature)
                                                 ? (item.temperature.reduce((a, b) => Number(a) + Number(b), 0) / item.temperature.length).toFixed(1)
-                                                : item.temperature}°C
+                                                : Number(item.temperature).toFixed(1)}°C
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Avg Humidity:</span>
                                         <span className="font-medium">
-                                            {Array.isArray(item.humidity)
-                                                ? (item.humidity.reduce((a, b) => Number(a) + Number(b), 0) / item.humidity.length).toFixed(1)
-                                                : item.humidity}%
+                                            {Number(item.humidity).toFixed(1)}%
                                         </span>
                                     </div>
                                 </div>
@@ -147,13 +143,12 @@ const Dashboard = () => {
         phosphorus: '',
         potassium: '',
         ph: '',
-        moisture: '',
         state: '',
         soil_type: '',
         // Initialize with 12 empty strings/zeros
-        rainfall: Array(12).fill(''),
+        rainfall: '',
         temperature: Array(12).fill(''),
-        humidity: Array(12).fill('')
+        humidity: ''
     });
 
     const fetchHistory = async () => {
@@ -200,8 +195,8 @@ const Dashboard = () => {
 
         // Basic validation for monthly inputs
         const isMonthlyValid = (arr) => arr.every(val => val !== '' && !isNaN(val));
-        if (!isMonthlyValid(formData.temperature) || !isMonthlyValid(formData.rainfall) || !isMonthlyValid(formData.humidity)) {
-            setError("Please fill in all 12 monthly values for Temperature, Rainfall, and Humidity.");
+        if (!isMonthlyValid(formData.temperature)) {
+            setError("Please fill in all 12 monthly values for Temperature.");
             return;
         }
 
@@ -285,7 +280,7 @@ const Dashboard = () => {
                         <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
                             <h3 className="text-xl font-bold text-emerald-800 mb-4 border-b border-emerald-200 pb-2">1. Soil Profile</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {['nitrogen', 'phosphorus', 'potassium', 'ph', 'moisture'].map((key) => (
+                                {['nitrogen', 'phosphorus', 'potassium', 'ph'].map((key) => (
                                     <div key={key}>
                                         <label htmlFor={key} className="block text-sm font-medium text-gray-700 capitalize">
                                             {key === 'ph' ? 'pH Level' : key}
@@ -342,8 +337,40 @@ const Dashboard = () => {
                             
                             <div className="space-y-6">
                                 {renderMonthlyInput('Temperature', 'temperature', '°C')}
-                                {renderMonthlyInput('Rainfall', 'rainfall', 'mm')}
-                                {renderMonthlyInput('Humidity', 'humidity', '%')}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label htmlFor='rainfall' className="block text-sm font-medium text-gray-700 capitalize">
+                                            Rainfall (mm)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name='rainfall'
+                                            id='rainfall'
+                                            value={formData['rainfall']}
+                                            onChange={handleChange}
+                                            className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                            required
+                                            step="any"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor='humidity' className="block text-sm font-medium text-gray-700 capitalize">
+                                            Humidity (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name='humidity'
+                                            id='humidity'
+                                            value={formData['humidity']}
+                                            onChange={handleChange}
+                                            className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                                            required
+                                            step="any"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

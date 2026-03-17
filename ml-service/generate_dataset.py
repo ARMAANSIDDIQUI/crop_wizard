@@ -3,16 +3,12 @@ import numpy as np
 import random
 
 # --- CONFIGURATION ---
-INPUT_FILE = "grand_crop_data_noisy.csv"
+INPUT_FILE = "Crop_recommendation.csv"
 OUTPUT_FILE = "grand_crop_data_monthly.csv"
+DUPLICATION_FACTOR = 50
+NOISE_LEVEL = 0.05
 
 # --- CROP SEASONAL PROFILES ---
-# Kharif: Monsoon heavy (Jun-Sep), Warm/Hot
-# Rabi: Winter (Oct-Mar), Cooler, Drier
-# Zaid: Summer (Mar-Jun), Hot, Dry
-# Horticulture/Year-round: Moderate variability
-# 0 = Jan, 11 = Dec
-
 CROP_PROFILES = {
     'Rice': {'type': 'Monsoon', 'water': 'High', 'temp_opt': 25},
     'Maize': {'type': 'Monsoon', 'water': 'Medium', 'temp_opt': 25},
@@ -91,42 +87,36 @@ CROP_PROFILES = {
     'Pistachio': {'type': 'Year-Round', 'water': 'Low', 'temp_opt': 30},
     'Walnut': {'type': 'Winter', 'water': 'Medium', 'temp_opt': 10},
 }
-
-
 DEFAULT_PROFILE = {'type': 'Monsoon (Kharif)', 'water': 'Medium', 'temp_opt': 25}
 
 # --- STATE CLIMATE BASELINES ---
-# Simplified monthly factors for India
-# Jan-Dec
 SEASONAL_PATTERNS = {
     'General': {
         'temp': [0.6, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6],
-        'rain': [0.1, 0.1, 0.2, 0.3, 0.5, 2.5, 3.5, 3.0, 2.0, 0.5, 0.2, 0.1], # Monsoon Jun-Sep
+        'rain': [0.1, 0.1, 0.2, 0.3, 0.5, 2.5, 3.5, 3.0, 2.0, 0.5, 0.2, 0.1],
         'humidity': [50, 45, 40, 35, 40, 70, 85, 85, 80, 65, 55, 50]
     },
-    'Himalayan': { # Colder, some winter rain/snow
+    'Himalayan': {
         'temp': [0.1, 0.2, 0.4, 0.7, 0.9, 1.0, 0.9, 0.9, 0.8, 0.6, 0.4, 0.2],
         'rain': [0.8, 0.8, 0.6, 0.5, 0.5, 1.5, 2.0, 2.0, 1.0, 0.4, 0.3, 0.6],
         'humidity': [60, 60, 55, 50, 50, 70, 80, 80, 70, 60, 60, 60]
     },
-    'South': { # Less temp variation, two monsoons
+    'South': {
         'temp': [0.9, 0.95, 1.0, 1.05, 1.05, 0.9, 0.85, 0.85, 0.9, 0.9, 0.9, 0.9],
         'rain': [0.2, 0.1, 0.2, 0.4, 0.6, 1.5, 2.0, 2.0, 1.5, 2.0, 1.5, 0.5],
         'humidity': [65, 60, 65, 70, 75, 80, 85, 85, 80, 80, 75, 70]
     }
 }
-
 HIMALAYAN_STATES = ['Jammu & Kashmir', 'Himachal Pradesh', 'Uttarakhand', 'Sikkim', 'Ladakh']
 SOUTH_STATES = ['Kerala', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Telangana']
 
-def get_monthly_data(row):
-    crop = row['Target']
-    state = row['State']
-    
-    # Identify Profile
+def add_noise(value, noise_level):
+    """Adds random noise to a value."""
+    return value * (1 + np.random.uniform(-noise_level, noise_level))
+
+def get_monthly_data(row, crop, state):
     profile = CROP_PROFILES.get(crop, DEFAULT_PROFILE)
     
-    # Identify Base Climate Pattern
     if state in HIMALAYAN_STATES:
         pattern = SEASONAL_PATTERNS['Himalayan']
         base_temp_avg = 15
@@ -137,100 +127,97 @@ def get_monthly_data(row):
         pattern = SEASONAL_PATTERNS['General']
         base_temp_avg = 30
         
-    # --- ADD VARIANCE ---
-    # Randomize base averages to simulate different years/microclimates
-    base_rain_avg = 120 * np.random.uniform(0.8, 1.3) # +/- 20-30% variance
-    base_temp_avg += np.random.uniform(-2, 2)         # +/- 2 degrees shift
+    base_rain_avg = 120 * np.random.uniform(0.8, 1.3)
+    base_temp_avg += np.random.uniform(-2, 2)
 
-    # Apply Crop Specific Adjustments
     water_mult = 1.0
     if profile['water'] == 'High': water_mult = 1.8
     elif profile['water'] == 'Low': water_mult = 0.4
     elif profile['water'] == 'VeryLow': water_mult = 0.1
-    
-    # Randomize water multiplier slightly (some farmers irrigate more/less)
     water_mult *= np.random.uniform(0.9, 1.1)
 
-    # Temp adjustment to center around crop optimal if needed, 
-    # but mostly we want the location's climate to dictate suitability.
-    # However, to simulate "good years" for the crop in the dataset, we bias slightly towards optimum.
-    # REDUCED BIAS: Let the model learn from suboptimal years too.
-    temp_bias = (profile['temp_opt'] - base_temp_avg) * 0.1 # Reduced from 0.2
+    temp_bias = (profile['temp_opt'] - base_temp_avg) * 0.1
 
     monthly_temps = []
     monthly_rains = []
     monthly_hums = []
 
     for i in range(12):
-        # Temperature
-        t_val = (base_temp_avg + temp_bias) * pattern['temp'][i] + np.random.normal(0, 2.0) # Increased noise
-        
-        # Enforce limits
+        t_val = (base_temp_avg + temp_bias) * pattern['temp'][i] + np.random.normal(0, 2.0)
         if t_val < -15: t_val = -15
         if t_val > 50: t_val = 50
-        
-        # Specific crop logic: Apple needs cold winter
         if crop == 'Apple' and i in [0, 1, 11] and t_val > 10:
-             t_val = np.random.normal(2, 3) # More variance in cold requirement
-
+             t_val = np.random.normal(2, 3)
         monthly_temps.append(round(t_val, 1))
 
-        # Rainfall
-        r_val = base_rain_avg * pattern['rain'][i] * water_mult + np.random.normal(0, 20) # Increased noise
+        r_val = base_rain_avg * pattern['rain'][i] * water_mult + np.random.normal(0, 20)
         if r_val < 0: r_val = 0
         monthly_rains.append(round(r_val, 1))
 
-        # Humidity
-        h_val = pattern['humidity'][i] + np.random.normal(0, 5) # Increased noise
-        if profile['water'] == 'High': h_val += np.random.uniform(2, 8) # Variable humidity boost
+        h_val = pattern['humidity'][i] + np.random.normal(0, 5)
+        if profile['water'] == 'High': h_val += np.random.uniform(2, 8)
         if h_val > 100: h_val = 100
         if h_val < 10: h_val = 10
         monthly_hums.append(round(h_val, 1))
 
-    return monthly_temps + monthly_rains + monthly_hums
+    return monthly_temps, monthly_rains, monthly_hums
 
 def main():
-    print(f"Reading {INPUT_FILE}...")
+    print(f"Reading original data from {INPUT_FILE}...")
     try:
         df = pd.read_csv(INPUT_FILE)
     except FileNotFoundError:
         print(f"Error: {INPUT_FILE} not found.")
         return
 
-    print("Generating 12-month seasonal data with realistic patterns...")
+    df.rename(columns={'label': 'Target', 'ph': 'pH'}, inplace=True)
 
-    # Define new column names
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    print(f"Generating augmented and monthly data (Factor: {DUPLICATION_FACTOR}x)...")
+    
+    new_data = []
+    
+    for _ in range(DUPLICATION_FACTOR):
+        for index, row in df.iterrows():
+            new_row = {}
+            
+            # Add noise to soil features
+            new_row['N'] = add_noise(row['N'], NOISE_LEVEL)
+            new_row['P'] = add_noise(row['P'], NOISE_LEVEL)
+            new_row['K'] = add_noise(row['K'], NOISE_LEVEL)
+            new_row['pH'] = add_noise(row['pH'], NOISE_LEVEL)
+
+            # Assign categorical features
+            state = np.random.choice([
+                'Maharashtra', 'Karnataka', 'Tamil Nadu', 'Uttar Pradesh', 'Punjab', 
+                'West Bengal', 'Gujarat', 'Madhya Pradesh', 'Andhra Pradesh', 'Kerala',
+                'Jammu & Kashmir', 'Himachal Pradesh', 'Assam', 'Rajasthan'
+            ])
+            soil_type = np.random.choice([
+                'Alluvial', 'Black', 'Red', 'Laterite', 'Arid', 'Forest'
+            ])
+            new_row['State'] = state
+            new_row['Soil_Type'] = soil_type
+            new_row['Target'] = row['Target']
+            
+            # Generate monthly atmospheric data
+            monthly_temps, monthly_rains, monthly_hums = get_monthly_data(row, row['Target'], state)
+            
+            months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            for i, m in enumerate(months):
+                new_row[f'Temp_{m}'] = monthly_temps[i]
+                new_row[f'Rain_{m}'] = monthly_rains[i]
+                new_row[f'Hum_{m}'] = monthly_hums[i]
+
+            new_data.append(new_row)
+
+    new_df = pd.DataFrame(new_data)
+    
+    # Reorder columns
     temp_cols = [f'Temp_{m}' for m in months]
     rain_cols = [f'Rain_{m}' for m in months]
     hum_cols = [f'Hum_{m}' for m in months]
-
-    new_data = []
-
-    for index, row in df.iterrows():
-        monthly_values = get_monthly_data(row)
-        row_data = row.to_dict()
-        
-        # Add new fields
-        for j, col in enumerate(temp_cols): row_data[col] = monthly_values[j]
-        for j, col in enumerate(rain_cols): row_data[col] = monthly_values[j + 12]
-        for j, col in enumerate(hum_cols): row_data[col] = monthly_values[j + 24]
-        
-        new_data.append(row_data)
-
-    new_df = pd.DataFrame(new_data)
-
-    # Drop old scalar columns
-    new_df = new_df.drop(['Temperature', 'Rainfall', 'Humidity', 'Moisture'], axis=1, errors='ignore')
-
-    # Reorder columns
-    # Keep Soil_Type and State as categorical features
-    # N, P, K, pH are scalar soil properties
     cols_order = ['N', 'P', 'K', 'pH'] + temp_cols + rain_cols + hum_cols + ['Soil_Type', 'State', 'Target']
-    
-    # Filter only available columns
-    available_cols = [c for c in cols_order if c in new_df.columns]
-    new_df = new_df[available_cols]
+    new_df = new_df[cols_order]
 
     print(f"Saving to {OUTPUT_FILE} with shape {new_df.shape}...")
     new_df.to_csv(OUTPUT_FILE, index=False)

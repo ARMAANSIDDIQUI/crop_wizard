@@ -48,6 +48,44 @@ mongoose.connect(process.env.MONGODB_URI, {
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+// Seed / enforce a default admin if env vars are provided
+const ensureSeedAdmin = async () => {
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminUsername || !adminPassword) {
+        console.log('ADMIN_USERNAME/ADMIN_PASSWORD not set; skipping admin seeding.');
+        return;
+    }
+
+    try {
+        const existing = await User.findOne({ username: adminUsername });
+        if (!existing) {
+            const admin = new User({ username: adminUsername, password: adminPassword, role: 'admin' });
+            await admin.save();
+            console.log(`Seeded admin user ${adminUsername}`);
+        } else {
+            let changed = false;
+            if (existing.role !== 'admin') {
+                existing.role = 'admin';
+                changed = true;
+            }
+            // Refresh password from env to ensure access (rehashes via pre-save hook)
+            existing.password = adminPassword;
+            changed = true;
+
+            if (changed) {
+                await existing.save();
+                console.log(`Ensured admin user ${adminUsername} is up to date`);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to seed admin user:', err);
+    }
+};
+
+ensureSeedAdmin();
+
 // --- Authentication Routes ---
 
 // User Registration

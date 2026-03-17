@@ -32,8 +32,6 @@ const History = ({ history }) => {
                                     <div className="text-gray-500">Phosphorus:</div><div className="font-medium">{item.phosphorus}</div>
                                     <div className="text-gray-500">Potassium:</div><div className="font-medium">{item.potassium}</div>
                                     <div className="text-gray-500">pH Level:</div><div className="font-medium">{item.ph}</div>
-                                    <div className="text-gray-500">Soil Type:</div><div className="font-medium">{item.soil_type || 'N/A'}</div>
-                                    <div className="text-gray-500">State:</div><div className="font-medium">{item.state || 'N/A'}</div>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-gray-100 text-sm space-y-2">
                                     <div className="flex justify-between">
@@ -119,16 +117,6 @@ const History = ({ history }) => {
 };
 
 
-const soilTypes = [
-    "Alluvial", "Arid", "Black", "Clay", "Clay Loam", "Laterite", "Loam", "Loamy",
-    "Red Sandy", "Saline", "Sandy", "Sandy Loam", "Silt Loam", "Volcanic", "Well-drained"
-];
-
-const states = [
-    "Bihar", "Gujarat", "Himachal Pradesh", "Jammu & Kashmir", "Ladakh", "Madhya Pradesh",
-    "Maharashtra", "Odisha", "Punjab", "Rajasthan", "Uttar Pradesh", "West Bengal"
-];
-
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const Dashboard = () => {
@@ -143,8 +131,6 @@ const Dashboard = () => {
         phosphorus: '',
         potassium: '',
         ph: '',
-        state: '',
-        soil_type: '',
         // Initialize with 12 empty strings/zeros
         rainfall: '',
         temperature: Array(12).fill(''),
@@ -197,6 +183,41 @@ const Dashboard = () => {
         const isMonthlyValid = (arr) => arr.every(val => val !== '' && !isNaN(val));
         if (!isMonthlyValid(formData.temperature)) {
             setError("Please fill in all 12 monthly values for Temperature.");
+            return;
+        }
+
+        // Numeric validation helpers
+        const requiredNumeric = [
+            { key: 'nitrogen', label: 'Nitrogen' },
+            { key: 'phosphorus', label: 'Phosphorus' },
+            { key: 'potassium', label: 'Potassium' },
+            { key: 'ph', label: 'pH Level' },
+            { key: 'rainfall', label: 'Rainfall' },
+            { key: 'humidity', label: 'Humidity' },
+        ];
+
+        for (const field of requiredNumeric) {
+            const value = Number(formData[field.key]);
+            if (formData[field.key] === '' || Number.isNaN(value)) {
+                setError(`${field.label} must be a number.`);
+                return;
+            }
+        }
+
+        const phValue = Number(formData.ph);
+        if (phValue < 0 || phValue > 14) {
+            setError("pH must be between 0 and 14.");
+            return;
+        }
+
+        const humidityValue = Number(formData.humidity);
+        if (humidityValue < 0 || humidityValue > 100) {
+            setError("Humidity must be between 0 and 100.");
+            return;
+        }
+
+        if (Number(formData.rainfall) < 0) {
+            setError("Rainfall cannot be negative.");
             return;
         }
 
@@ -294,25 +315,12 @@ const Dashboard = () => {
                                             className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                                             required
                                             step="any"
+                                            min={key === 'ph' ? 0 : undefined}
+                                            max={key === 'ph' ? 14 : undefined}
                                             placeholder="0"
                                         />
                                     </div>
                                 ))}
-
-                                <div>
-                                    <label htmlFor="soil_type" className="block text-sm font-medium text-gray-700">Soil Type</label>
-                                    <select
-                                        name="soil_type"
-                                        id="soil_type"
-                                        value={formData.soil_type}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                                        required
-                                    >
-                                        <option value="" disabled>Select Soil Type</option>
-                                        {soilTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -320,19 +328,6 @@ const Dashboard = () => {
                         <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
                             <div className="flex justify-between items-center border-b border-blue-200 pb-2 mb-4">
                                 <h3 className="text-xl font-bold text-blue-800">2. Atmospheric Conditions</h3>
-                                <div className="w-1/3 min-w-[200px]">
-                                    <select
-                                        name="state"
-                                        id="state"
-                                        value={formData.state}
-                                        onChange={handleChange}
-                                        className="block w-full px-3 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                        required
-                                    >
-                                        <option value="" disabled>Select Region / State</option>
-                                        {states.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
                             </div>
                             
                             <div className="space-y-6">
@@ -351,6 +346,7 @@ const Dashboard = () => {
                                             className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                                             required
                                             step="any"
+                                            min={0}
                                             placeholder="0"
                                         />
                                     </div>
@@ -367,6 +363,8 @@ const Dashboard = () => {
                                             className="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                                             required
                                             step="any"
+                                            min={0}
+                                            max={100}
                                             placeholder="0"
                                         />
                                     </div>

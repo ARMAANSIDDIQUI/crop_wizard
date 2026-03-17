@@ -179,16 +179,9 @@ def predict():
         # Format the response
         predictions = []
         for i in range(3):
-            crop_name_raw = top3_crop_names[i]
-
-            # Normalize for lookup and display: model classes are lowercase, CROP_INFO keys are Title Case
-            crop_name = crop_name_raw.strip().title()
-
-            info = CROP_INFO.get(
-                crop_name,
-                {'type': 'Unknown', 'water': 'Medium', 'duration': 'N/A'}
-            )
-
+            crop_name = top3_crop_names[i]
+            # Use .strip() to handle potential whitespace issues
+            info = CROP_INFO.get(crop_name.strip(), {'type': 'Unknown', 'water': 'Medium', 'duration': 'N/A'})
             predictions.append({
                 'crop': crop_name,
                 'probability': round(top3_probabilities[i] * 100, 2),

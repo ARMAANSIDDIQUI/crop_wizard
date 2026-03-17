@@ -1,12 +1,19 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
-    const token = localStorage.getItem('token');
+    const { isAuthenticated, loading } = useAuth();
 
-    // If token exists, allow access to the nested routes (e.g., Dashboard)
-    // Otherwise, redirect to the login page
-    return token ? <Outlet /> : <Navigate to="/login" replace />;
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-emerald-700">
+                Checking session...
+            </div>
+        );
+    }
+
+    return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;

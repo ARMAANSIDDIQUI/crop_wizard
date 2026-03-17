@@ -126,11 +126,6 @@ def main():
                 'West Bengal', 'Gujarat', 'Madhya Pradesh', 'Andhra Pradesh', 'Kerala',
                 'Jammu & Kashmir', 'Himachal Pradesh', 'Assam', 'Rajasthan'
             ])
-            soil_type = np.random.choice([
-                'Alluvial', 'Black', 'Red', 'Laterite', 'Arid', 'Forest'
-            ])
-            new_row['State'] = state
-            new_row['Soil_Type'] = soil_type
             new_row['Target'] = row['Target']
             
             # Generate monthly temperature data
@@ -146,7 +141,7 @@ def main():
     
     # Reorder columns
     temp_cols = [f'Temp_{m}' for m in months]
-    cols_order = ['N', 'P', 'K', 'pH', 'Humidity', 'Rainfall'] + temp_cols + ['Soil_Type', 'State', 'Target']
+    cols_order = ['N', 'P', 'K', 'pH', 'Humidity', 'Rainfall'] + temp_cols + ['Target']
     new_df = new_df[cols_order]
 
     print(f"Saving to {OUTPUT_FILE} with shape {new_df.shape}...")

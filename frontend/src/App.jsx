@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
 import { FaLeaf } from 'react-icons/fa';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Import Pages
 import Home from './pages/Home';
@@ -16,12 +17,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 // A simple navigation component to be used in the layout
 const Navigation = () => {
     const navigate = useNavigate();
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
+    const { role, isAuthenticated, logout } = useAuth();
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
+        logout();
         navigate('/login');
     };
 
@@ -39,8 +38,7 @@ const Navigation = () => {
                         <div className="ml-10 flex items-baseline space-x-4">
                             <Link to="/" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</Link>
                             <Link to="/blog" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Blog</Link>
-                            
-                            {token ? (
+                            {isAuthenticated ? (
                                 <>
                                     <Link to="/dashboard" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</Link>
                                     {role === 'admin' && (
@@ -49,6 +47,9 @@ const Navigation = () => {
                                             <Link to="/admin/users" className="text-gray-600 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Admin Users</Link>
                                         </>
                                     )}
+                                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold text-emerald-800 bg-emerald-100 rounded-full border border-emerald-200">
+                                        Signed in
+                                    </span>
                                     <button onClick={handleLogout} className="bg-red-500 text-white hover:bg-red-600 px-3 py-2 rounded-md text-sm font-medium">Logout</button>
                                 </>
                             ) : (
@@ -67,25 +68,27 @@ const Navigation = () => {
 
 function App() {
     return (
-        <Router>
-            <Navigation />
-            <main className="pt-16"> {/* Add padding to main content to offset fixed navbar */}
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/blog" element={<BlogList />} />
-                    <Route path="/blog/:id" element={<BlogDetail />} />
-                    
-                    {/* Protected Route for Dashboard and Admin */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/admin/blog" element={<AdminBlog />} />
-                        <Route path="/admin/users" element={<AdminUsers />} />
-                    </Route>
-                </Routes>
-            </main>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <Navigation />
+                <main className="pt-16"> {/* Add padding to main content to offset fixed navbar */}
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/blog" element={<BlogList />} />
+                        <Route path="/blog/:id" element={<BlogDetail />} />
+                        
+                        {/* Protected Route for Dashboard and Admin */}
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/admin/blog" element={<AdminBlog />} />
+                            <Route path="/admin/users" element={<AdminUsers />} />
+                        </Route>
+                    </Routes>
+                </main>
+            </Router>
+        </AuthProvider>
     );
 }
 

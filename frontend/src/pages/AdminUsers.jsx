@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUserEdit, FaTrash, FaRedo, FaHistory, FaTimes } from 'react-icons/fa';
+import { FaUserEdit, FaRedo, FaHistory, FaTimes } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const AdminUsers = () => {
+    const navigate = useNavigate();
+    const { token, role, isAuthenticated } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -17,7 +21,6 @@ const AdminUsers = () => {
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
             const response = await axios.get('/api/admin/users', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -31,12 +34,17 @@ const AdminUsers = () => {
     };
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (isAuthenticated && role !== 'admin') {
+            navigate('/dashboard');
+            return;
+        }
+        if (token) {
+            fetchUsers();
+        }
+    }, [isAuthenticated, role, token]);
 
     const handleUpdateLimit = async (userId) => {
         try {
-            const token = localStorage.getItem('token');
             await axios.put(`/api/admin/users/${userId}/limit`, 
                 { limit: Number(newLimit) },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -53,7 +61,6 @@ const AdminUsers = () => {
     const handleResetCount = async (userId) => {
         if (!window.confirm('Are you sure you want to reset the prediction count for this user?')) return;
         try {
-            const token = localStorage.getItem('token');
             await axios.put(`/api/admin/users/${userId}/reset-count`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -69,7 +76,6 @@ const AdminUsers = () => {
         setLoadingHistory(true);
         setShowHistoryModal(true);
         try {
-            const token = localStorage.getItem('token');
             const response = await axios.get(`/api/admin/users/${user._id}/history`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -92,29 +98,36 @@ const AdminUsers = () => {
     if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
 
     return (
-        <div className="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8 relative">
-            <div className="max-w-6xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-                    <span className="text-sm text-gray-500">{users.length} Users</span>
+        <div className="relative bg-beige-50 min-h-screen overflow-hidden py-14 px-4 sm:px-6 lg:px-8">
+            <div className="absolute top-0 -left-24 w-72 h-72 bg-emerald-200/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
+            <div className="absolute top-10 -right-24 w-80 h-80 bg-teal-200/50 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000" />
+            <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-lime-200/50 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000" />
+
+            <div className="relative max-w-6xl mx-auto bg-white/85 backdrop-blur rounded-3xl shadow-2xl overflow-hidden border border-emerald-50">
+                <div className="p-6 border-b border-emerald-50 flex justify-between items-center">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-emerald-600 font-semibold">Admin</p>
+                        <h1 className="text-2xl font-extrabold text-emerald-900">User Management</h1>
+                    </div>
+                    <span className="text-sm text-gray-600">{users.length} Users</span>
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-emerald-50">
+                        <thead className="bg-emerald-50/70">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predictions Used</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">Username</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">Role</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">Predictions Used</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">Limit</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-emerald-50">
                             {users.map((user) => (
-                                <tr key={user._id}>
+                                <tr key={user._id} className="hover:bg-emerald-50/50">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                                        <div className="text-sm font-bold text-gray-900">{user.username}</div>
                                         <div className="text-xs text-gray-500">ID: {user._id}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -122,21 +135,21 @@ const AdminUsers = () => {
                                             {user.role}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {user.predictionCount}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                         {editingLimit === user._id ? (
                                             <div className="flex items-center space-x-2">
                                                 <input 
                                                     type="number" 
                                                     value={newLimit} 
                                                     onChange={(e) => setNewLimit(e.target.value)}
-                                                    className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
+                                                    className="w-20 border border-emerald-200 rounded px-2 py-1 text-sm focus:ring-emerald-500 focus:border-emerald-500"
                                                 />
                                                 <button 
                                                     onClick={() => handleUpdateLimit(user._id)}
-                                                    className="text-green-600 hover:text-green-900 text-xs font-bold"
+                                                    className="text-emerald-600 hover:text-emerald-800 text-xs font-bold"
                                                 >
                                                     Save
                                                 </button>
@@ -152,7 +165,7 @@ const AdminUsers = () => {
                                                 <span>{user.predictionLimit || 5}</span> {/* Default to 5 if undefined in old records */}
                                                 <button 
                                                     onClick={() => { setEditingLimit(user._id); setNewLimit(user.predictionLimit || 5); }}
-                                                    className="text-blue-500 hover:text-blue-700"
+                                                    className="text-emerald-600 hover:text-emerald-800"
                                                     title="Edit Limit"
                                                 >
                                                     <FaUserEdit />
@@ -187,19 +200,19 @@ const AdminUsers = () => {
             {showHistoryModal && (
                 <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                     <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeHistoryModal}></div>
+                        <div className="fixed inset-0 bg-gray-700 bg-opacity-50 transition-opacity" aria-hidden="true" onClick={closeHistoryModal}></div>
 
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div className="inline-block align-bottom bg-white/95 backdrop-blur rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-emerald-50">
+                            <div className="bg-white px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
                                 <div className="sm:flex sm:items-start">
                                     <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                         <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                            <h3 className="text-lg leading-6 font-bold text-emerald-900" id="modal-title">
                                                 History for {selectedUser?.username}
                                             </h3>
-                                            <button onClick={closeHistoryModal} className="text-gray-400 hover:text-gray-500">
+                                            <button onClick={closeHistoryModal} className="text-gray-400 hover:text-gray-600">
                                                 <FaTimes size={24} />
                                             </button>
                                         </div>
@@ -212,20 +225,26 @@ const AdminUsers = () => {
                                             ) : (
                                                 <div className="space-y-4">
                                                     {userHistory.map((item) => (
-                                                        <div key={item._id} className="border rounded-lg p-4 bg-gray-50">
+                                                        <div key={item._id} className="border border-emerald-50 rounded-lg p-4 bg-emerald-50/40">
                                                             <div className="flex justify-between text-xs text-gray-500 mb-2">
                                                                 <span>{new Date(item.createdAt).toLocaleString()}</span>
                                                                 <span>ID: {item._id}</span>
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                                                                 <div>N: {item.nitrogen}, P: {item.phosphorus}, K: {item.potassium}</div>
-                                                                <div>pH: {item.ph}, Humidity (Avg): {Array.isArray(item.humidity) ? (item.humidity.reduce((a,b)=>Number(a)+Number(b),0)/item.humidity.length).toFixed(1) : item.humidity}%</div>
+                                                                <div>
+                                                                    pH: {item.ph}, Humidity: {
+                                                                        Array.isArray(item.humidity)
+                                                                            ? (item.humidity.reduce((a,b)=>Number(a)+Number(b),0)/item.humidity.length).toFixed(1)
+                                                                            : Number(item.humidity).toFixed(1)
+                                                                    }%
+                                                                </div>
                                                             </div>
                                                             <div className="mt-2">
-                                                                <h4 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Predictions:</h4>
+                                                                <h4 className="font-semibold text-xs uppercase tracking-wide text-emerald-700">Predictions:</h4>
                                                                 <div className="flex flex-wrap gap-2 mt-1">
                                                                     {item.predictions && item.predictions.map((p, idx) => (
-                                                                        <span key={idx} className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">
+                                                                        <span key={idx} className="bg-white text-emerald-700 border border-emerald-100 text-xs px-2 py-1 rounded">
                                                                             {p.crop} ({p.probability}%)
                                                                         </span>
                                                                     ))}
@@ -239,10 +258,10 @@ const AdminUsers = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <div className="bg-emerald-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                                 <button 
                                     type="button" 
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-emerald-200 shadow-sm px-4 py-2 bg-white text-base font-semibold text-emerald-800 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                                     onClick={closeHistoryModal}
                                 >
                                     Close

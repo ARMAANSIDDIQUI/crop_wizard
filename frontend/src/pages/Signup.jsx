@@ -28,11 +28,17 @@ export default function Signup() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-beige-50 p-4" style={{'--tw-bg-opacity': '1', backgroundColor: 'rgba(245, 245, 220, var(--tw-bg-opacity))'}}>
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 lg:p-12 border border-emerald-100">
-                <div className="text-center mb-8">
-                    <h2 className="text-4xl font-bold text-emerald-800">Create an Account</h2>
-                    <p className="text-gray-600 mt-2">Sign up to get started.</p>
+        <div className="min-h-screen flex items-center justify-center bg-beige-50 p-4 sm:p-6" style={{'--tw-bg-opacity': '1', backgroundColor: 'rgba(245, 245, 220, var(--tw-bg-opacity))'}}>
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 sm:p-8 lg:p-12 border border-emerald-100">
+                <div className="mb-4 sm:mb-6">
+                    <Link to="/" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-emerald-600 transition-colors">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back to Home
+                    </Link>
+                </div>
+                <div className="text-center mb-6 sm:mb-8">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-emerald-800">Create an Account</h2>
+                    <p className="text-sm sm:text-base text-gray-600 mt-2">Sign up to get started.</p>
                 </div>
                 
                 {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">{error}</div>}

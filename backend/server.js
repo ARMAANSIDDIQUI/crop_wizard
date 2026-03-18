@@ -1,6 +1,4 @@
 require('dotenv').config();
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '1.1.1.1']);
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -21,6 +19,14 @@ const JWT_SECRET = process.env.JWT_SECRET; // Use environment variables in produ
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Gracefully handle malformed JSON payload errors
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ message: 'Invalid JSON payload format.' });
+    }
+    next();
+});
 
 // Cloudinary Config
 cloudinary.config({

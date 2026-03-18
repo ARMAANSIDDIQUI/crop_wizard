@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
+    const { isAuthenticated, logout } = useAuth();
     return (
         <div className="relative bg-beige-50 min-h-screen flex flex-col items-center justify-center overflow-hidden">
             {/* Background decorative shapes */}
@@ -23,12 +25,21 @@ const Home = () => {
                     >
                         Get Started
                     </Link>
-                    <Link
-                        to="/login"
-                        className="w-full sm:w-auto bg-white text-emerald-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 transition-transform transform hover:scale-105"
-                    >
-                        Login
-                    </Link>
+                    {isAuthenticated ? (
+                        <button
+                            onClick={logout}
+                            className="w-full sm:w-auto bg-white text-emerald-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 transition-transform transform hover:scale-105"
+                        >
+                            Logout
+                        </button>
+                    ) : (
+                        <Link
+                            to="/login"
+                            className="w-full sm:w-auto bg-white text-emerald-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 transition-transform transform hover:scale-105"
+                        >
+                            Login
+                        </Link>
+                    )}
                 </div>
             </div>
             

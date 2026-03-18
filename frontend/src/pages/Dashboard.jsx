@@ -116,6 +116,13 @@ const History = ({ history }) => {
     );
 };
 
+const testCases = [
+    { label: 'Rice', nitrogen: 85.03, phosphorus: 34.93, potassium: 36.97, ph: 6.0, humidity: 73.31, rainfall: 189.24, temperature: [22.7,19.4,28.4,34.0,32.9,35.8,27.4,28.4,29.1,27.7,22.9,16.5] },
+    { label: 'Apple', nitrogen: 105.03, phosphorus: 132.18, potassium: 179.34, ph: 7.23, humidity: 56.98, rainfall: 107.57, temperature: [16.6,19.5,27.0,37.8,39.2,33.9,29.7,30.8,31.4,27.3,24.3,18.9] },
+    { label: 'Coconut', nitrogen: 19.95, phosphorus: 34.44, potassium: 9.30, ph: 6.89, humidity: 91.03, rainfall: 99.03, temperature: [21.8,27.0,25.7,33.6,37.1,32.1,32.7,29.5,30.6,29.6,21.6,20.2] },
+    { label: 'Coffee', nitrogen: 111.94, phosphorus: 44.20, potassium: 18.54, ph: 5.79, humidity: 60.83, rainfall: 167.16, temperature: [0.3,2.9,1.2,12.3,12.8,14.8,15.2,13.1,15.6,11.5,4.2,5.7] },
+    { label: 'Mango', nitrogen: 9.51, phosphorus: 10.69, potassium: 13.18, ph: 7.01, humidity: 66.46, rainfall: 157.35, temperature: [23.8,25.4,27.3,31.2,32.7,29.1,24.6,25.1,25.3,28.5,25.7,25.8] }
+];
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -157,11 +164,22 @@ const Dashboard = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Handler for monthly array inputs
     const handleMonthlyChange = (index, field, value) => {
         const newArray = [...formData[field]];
         newArray[index] = value;
         setFormData({ ...formData, [field]: newArray });
+    };
+
+    const populateTestCase = (tc) => {
+        setFormData({
+            nitrogen: tc.nitrogen,
+            phosphorus: tc.phosphorus,
+            potassium: tc.potassium,
+            ph: tc.ph,
+            humidity: tc.humidity,
+            rainfall: tc.rainfall,
+            temperature: tc.temperature
+        });
     };
 
     const handleCopyAll = (field) => {
@@ -297,6 +315,23 @@ const Dashboard = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-8">
                         
+                        {/* Section 0: Test Cases prefill */}
+                        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                            <h3 className="text-sm font-bold text-emerald-800 mb-3">Auto-Fill Test Cases (Expected Output)</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {testCases.map(tc => (
+                                    <button
+                                        key={tc.label}
+                                        type="button"
+                                        onClick={() => populateTestCase(tc)}
+                                        className="px-3 py-1.5 bg-white border border-emerald-300 text-sm font-bold text-emerald-700 rounded-md shadow-sm hover:bg-emerald-100 hover:text-emerald-900 transition-colors shadow-emerald-100"
+                                    >
+                                        Expected: {tc.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Section 1: Soil Profile */}
                         <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
                             <h3 className="text-xl font-bold text-emerald-800 mb-4 border-b border-emerald-200 pb-2">1. Soil Profile</h3>

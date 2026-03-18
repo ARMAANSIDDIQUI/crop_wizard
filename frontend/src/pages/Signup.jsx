@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function Signup() {
     const [username, setUsername] = useState('');
@@ -15,23 +16,12 @@ export default function Signup() {
         setError('');
 
         try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
-
-            const text = await response.text();
-            const data = text ? JSON.parse(text) : {};
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to register.');
-            }
+            await axios.post('/api/auth/register', { username, password });
 
             navigate('/login');
 
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to register.');
         } finally {
             setIsLoading(false);
         }

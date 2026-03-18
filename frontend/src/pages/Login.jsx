@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -17,24 +18,14 @@ export default function Login() {
         setError('');
 
         try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            });
-
-            const text = await response.text();
-            const data = text ? JSON.parse(text) : {};
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to login.');
-            }
+            const response = await axios.post('/api/auth/login', { username, password });
+            const data = response.data;
 
             login(data.token, data.role || 'user');
             navigate('/dashboard');
 
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to login.');
         } finally {
             setIsLoading(false);
         }

@@ -245,7 +245,9 @@ const Dashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const mlResponse = await axios.post('/predict', { ...formData });
+            const mlApiUrl = import.meta.env.VITE_ML_API_URL || '';
+            const predictUrl = mlApiUrl ? `${mlApiUrl}/predict` : '/predict';
+            const mlResponse = await axios.post(predictUrl, { ...formData });
             const predictions = mlResponse.data;
             setPrediction(predictions);
 

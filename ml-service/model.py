@@ -148,7 +148,7 @@ def main():
     # To plot precision matrix we use row-normalized CM (precision = true pos / predicted pos)
     # Actually, calculating precision score and plotting it makes more sense, or just plotting cm
     plt.figure(figsize=(12, 10))
-    sns.heatmap(cm, annot=False, cmap='Blues', xticklabels=class_names, yticklabels=class_names)
+    sns.heatmap(cm, annot=False, cmap='Blues', xticklabels=class_names, yticklabels=class_names, linewidths=1, linecolor='black')
     plt.title('Confusion Matrix')
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')

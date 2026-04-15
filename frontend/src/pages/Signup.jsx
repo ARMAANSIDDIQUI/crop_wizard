@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 
 export default function Signup() {
     const [username, setUsername] = useState('');
@@ -16,7 +16,7 @@ export default function Signup() {
         setError('');
 
         try {
-            await axios.post('/api/auth/register', { username, password });
+            await backendApi.post('/auth/register', { username, password });
 
             navigate('/login');
 

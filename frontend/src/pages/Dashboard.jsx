@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { backendApi, mlApi } from '../utils/api';
 
 // Mock child component for displaying prediction history
 const History = ({ history }) => {
@@ -146,10 +146,7 @@ const Dashboard = () => {
 
     const fetchHistory = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const { data } = await axios.get('/api/history', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const { data } = await backendApi.get('/history');
             setHistory(data);
         } catch (err) {
             console.error('Failed to fetch history:', err);
@@ -244,10 +241,7 @@ const Dashboard = () => {
         setPrediction(null);
 
         try {
-            const token = localStorage.getItem('token');
-            const mlApiUrl = import.meta.env.VITE_ML_API_URL || '';
-            const predictUrl = mlApiUrl ? `${mlApiUrl}/predict` : '/predict';
-            const mlResponse = await axios.post(predictUrl, { ...formData });
+            const mlResponse = await mlApi.post('/predict', { ...formData });
             const predictions = mlResponse.data;
             setPrediction(predictions);
 
@@ -260,9 +254,8 @@ const Dashboard = () => {
             setHistory(prev => [newHistoryItem, ...prev]);
 
             try {
-                await axios.post('/api/history',
-                    { ...formData, predictions: predictions },
-                    { headers: { Authorization: `Bearer ${token}` } }
+                await backendApi.post('/history',
+                    { ...formData, predictions: predictions }
                 );
                 fetchHistory(); // Refresh to get real ID
             } catch (historyErr) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,7 +12,7 @@ const BlogList = () => {
     useEffect(() => {
         const fetchBlogs = async () => {
             try {
-                const response = await axios.get('/api/blogs');
+                const response = await backendApi.get('/blogs');
                 setBlogs(response.data);
             } catch (err) {
                 setError('Failed to fetch blogs.');

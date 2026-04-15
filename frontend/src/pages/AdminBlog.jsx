@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,14 +33,7 @@ const AdminBlog = () => {
         formData.append('file', file);
 
         try {
-        const config = {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${token}` // Ensure Authorization header is set
-            }
-        };
-
-            const { data } = await axios.post('/api/upload', formData, config);
+            const { data } = await backendApi.post('/upload', formData);
             setImageUrl(data.url);
             setSuccess('File uploaded successfully!');
         } catch (err) {
@@ -64,13 +57,6 @@ const AdminBlog = () => {
         }
 
         try {
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            };
-
             const blogData = {
                 title,
                 content,
@@ -78,7 +64,7 @@ const AdminBlog = () => {
                 tags: tags.split(',').map(tag => tag.trim())
             };
 
-            await axios.post('/api/blogs', blogData, config);
+            await backendApi.post('/blogs', blogData);
             setSuccess('Blog post created successfully!');
             setTitle('');
             setContent('');

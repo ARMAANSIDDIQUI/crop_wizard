@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -18,7 +18,7 @@ export default function Login() {
         setError('');
 
         try {
-            const response = await axios.post('/api/auth/login', { username, password });
+            const response = await backendApi.post('/auth/login', { username, password });
             const data = response.data;
 
             login(data.token, data.role || 'user');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 import { FaUserEdit, FaRedo, FaHistory, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -21,9 +21,7 @@ const AdminUsers = () => {
 
     const fetchUsers = async () => {
         try {
-            const response = await axios.get('/api/admin/users', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await backendApi.get('/admin/users');
             setUsers(response.data);
             setLoading(false);
         } catch (err) {
@@ -45,9 +43,8 @@ const AdminUsers = () => {
 
     const handleUpdateLimit = async (userId) => {
         try {
-            await axios.put(`/api/admin/users/${userId}/limit`, 
-                { limit: Number(newLimit) },
-                { headers: { Authorization: `Bearer ${token}` } }
+            await backendApi.put(`/admin/users/${userId}/limit`, 
+                { limit: Number(newLimit) }
             );
             setEditingLimit(null);
             setNewLimit('');
@@ -61,9 +58,7 @@ const AdminUsers = () => {
     const handleResetCount = async (userId) => {
         if (!window.confirm('Are you sure you want to reset the prediction count for this user?')) return;
         try {
-            await axios.put(`/api/admin/users/${userId}/reset-count`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await backendApi.put(`/admin/users/${userId}/reset-count`, {});
             fetchUsers(); // Refresh list
         } catch (err) {
             console.error('Failed to reset count:', err);
@@ -76,9 +71,7 @@ const AdminUsers = () => {
         setLoadingHistory(true);
         setShowHistoryModal(true);
         try {
-            const response = await axios.get(`/api/admin/users/${user._id}/history`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await backendApi.get(`/admin/users/${user._id}/history`);
             setUserHistory(response.data);
         } catch (err) {
             console.error('Failed to fetch user history:', err);

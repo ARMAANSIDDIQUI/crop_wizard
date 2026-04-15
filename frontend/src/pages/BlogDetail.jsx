@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { backendApi } from '../utils/api';
 import { useParams, Link } from 'react-router-dom';
 
 const BlogDetail = () => {
@@ -11,7 +11,7 @@ const BlogDetail = () => {
     useEffect(() => {
         const fetchBlog = async () => {
             try {
-                const response = await axios.get(`/api/blogs/${id}`);
+                const response = await backendApi.get(`/blogs/${id}`);
                 setBlog(response.data);
             } catch (err) {
                 setError('Failed to fetch blog.');

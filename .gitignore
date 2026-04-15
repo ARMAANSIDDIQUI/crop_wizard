@@ -35,8 +35,9 @@ catboost_info/
 .env.local
 .env.*.local
 
-# ML Artifacts (Large Files - keeping generic csv/pkl ignored, can be force added if critical)
-*.pkl
+# ML Artifacts
+# *.pkl  <-- Unignored generic pkl to allow model files
+!ml-service/*.pkl
 *.h5
 *.model
 grand_crop_data_monthly.csv

@@ -1,8 +1,16 @@
 import axios from 'axios';
 
 // Get base URLs from env or use provided fallbacks
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || '/api';
-const ML_BASE_URL = import.meta.env.VITE_ML_API_URL || 'https://armaan-siddiqui-crop-wizard.hf.space';
+const BACKEND_FALLBACK = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000/api' 
+    : '/api';
+
+const ML_FALLBACK = window.location.hostname === 'localhost'
+    ? 'http://localhost:5002' 
+    : 'https://armaan-siddiqui-crop-wizard.hf.space';
+
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || BACKEND_FALLBACK;
+const ML_BASE_URL = import.meta.env.VITE_ML_API_URL || ML_FALLBACK;
 
 // Create axios instances
 const backendApi = axios.create({

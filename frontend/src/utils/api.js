@@ -36,4 +36,20 @@ backendApi.interceptors.request.use((config) => {
     return config;
 });
 
+// Interceptor to handle 401 errors (unauthorized)
+backendApi.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            // Auto logout if 401 received
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login?session=expired';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export { backendApi, mlApi, BACKEND_BASE_URL, ML_BASE_URL };

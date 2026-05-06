@@ -109,7 +109,12 @@ app.post('/api/auth/register', async (req, res) => {
         await user.save();
         res.status(201).json({ message: 'User registered successfully.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error during registration.', error: error.message });
+        console.error('Registration Error:', error);
+        res.status(500).json({ 
+            message: 'Server error during registration.', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+        });
     }
 });
 
@@ -120,6 +125,9 @@ app.post('/api/auth/login', async (req, res) => {
         return res.status(400).json({ message: 'Username and password are required.' });
     }
     try {
+        if (!JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined in environment variables.');
+        }
         const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials.' });
@@ -128,10 +136,15 @@ app.post('/api/auth/login', async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials.' });
         }
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, role: user.role, username: user.username });
     } catch (error) {
-        res.status(500).json({ message: 'Server error during login.', error: error.message });
+        console.error('Login Error:', error);
+        res.status(500).json({ 
+            message: 'Server error during login.', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
@@ -146,14 +159,19 @@ const authenticate = async (req, res, next) => {
         return res.status(401).json({ message: 'Authentication required.' });
     }
     try {
+        if (!JWT_SECRET) {
+            console.error('CRITICAL: JWT_SECRET is missing during verification.');
+            return res.status(500).json({ message: 'Server configuration error.' });
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = await User.findById(decoded.userId);
         if (!req.user) {
-            return res.status(404).json({ message: 'User not found.' });
+            return res.status(401).json({ message: 'User no longer exists.' });
         }
         next();
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token.' });
+        console.error('Authentication Error:', error.message);
+        res.status(401).json({ message: 'Invalid or expired token.', error: error.message });
     }
 };
 

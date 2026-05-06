@@ -1,15 +1,20 @@
 import axios from 'axios';
 
 // Get base URLs from env or use provided fallbacks
-const BACKEND_FALLBACK = window.location.hostname === 'localhost' 
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const BACKEND_FALLBACK = isLocal 
     ? 'http://localhost:5000/api' 
     : '/api';
 
-const ML_FALLBACK = window.location.hostname === 'localhost'
+const ML_FALLBACK = isLocal
     ? 'http://localhost:5002' 
     : 'https://armaan-siddiqui-crop-wizard.hf.space';
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || BACKEND_FALLBACK;
+// Ensure that on production (Vercel), we don't accidentally hit localhost
+const BACKEND_BASE_URL = (import.meta.env.VITE_BACKEND_API_URL && !import.meta.env.VITE_BACKEND_API_URL.includes('localhost'))
+    ? import.meta.env.VITE_BACKEND_API_URL 
+    : BACKEND_FALLBACK;
 const ML_BASE_URL = import.meta.env.VITE_ML_API_URL || ML_FALLBACK;
 
 // Create axios instances

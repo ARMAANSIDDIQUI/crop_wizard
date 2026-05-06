@@ -13,6 +13,7 @@ const historySchema = new mongoose.Schema({
     rainfall: Number,
     temperature: [Number],
     humidity: Number,
+    soil_type: String,
     predictions: [{
         crop: { type: String, required: true },
         probability: Number,

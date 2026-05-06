@@ -37,6 +37,17 @@ def load_models():
 # Initial load attempt
 load_models()
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'message': 'CropWizard ML Service is running',
+        'endpoints': {
+            '/predict': 'POST - Get crop recommendations',
+            '/': 'GET - Health check'
+        }
+    })
+
 @app.route('/predict', methods=['POST'])
 def predict():
     global model, label_encoder
@@ -76,6 +87,9 @@ def predict():
         
         # 2. Monthly Inputs (Only Temperature now)
         input_data.update(process_monthly('temperature', 'Temp'))
+
+        # 3. Categorical Inputs
+        input_data['Soil_Type'] = data.get('soil_type', 'Alluvial') # Default to Alluvial if missing
 
         # Determine column order dynamically or hardcode if strict
         # Model pipeline usually handles dict->df conversion if cols match, 
@@ -205,4 +219,5 @@ def predict():
         return jsonify({'error': f'An error occurred during prediction: {str(e)}'}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    # Hugging Face requires port 7860
+    app.run(host='0.0.0.0', port=7860)

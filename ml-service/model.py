@@ -61,11 +61,11 @@ def main():
     # Ensemble Models
     # CatBoost - Balanced regularization
     clf_cat = CatBoostClassifier(
-        iterations=150, 
-        learning_rate=0.1, 
-        depth=6, 
-        l2_leaf_reg=5,       # Moderate L2 regularization
-        subsample=0.8,       # Bagging
+        iterations=250, 
+        learning_rate=0.04, 
+        depth=5,             
+        l2_leaf_reg=15,      
+        subsample=0.7,       
         bootstrap_type='Bernoulli', 
         verbose=0, 
         random_state=42, 
@@ -74,23 +74,23 @@ def main():
     
     # XGBoost - Balanced regularization
     clf_xgb = xgb.XGBClassifier(
-        n_estimators=150, 
-        learning_rate=0.1, 
-        max_depth=6, 
-        reg_lambda=5,        # Moderate L2 regularization
-        reg_alpha=1,         # Low L1 regularization
-        subsample=0.8,       # Row sampling
-        colsample_bytree=0.8,# Column sampling
+        n_estimators=250, 
+        learning_rate=0.04, 
+        max_depth=5,         
+        reg_lambda=15,       
+        reg_alpha=8,         
+        subsample=0.7,       
+        colsample_bytree=0.7,
         random_state=42, 
         eval_metric='mlogloss'
     )
     
     # Random Forest - Balanced pruning
     clf_rf = RandomForestClassifier(
-        n_estimators=150, 
-        max_depth=12,        # Deeper trees
-        min_samples_leaf=4,  # Moderate isolation prevention
-        min_samples_split=8,
+        n_estimators=250, 
+        max_depth=12,        
+        min_samples_leaf=10, 
+        min_samples_split=20,
         max_features='sqrt',
         random_state=42
     )
@@ -109,8 +109,15 @@ def main():
         ('model', voting_clf)
     ])
 
+    # --- CROSS-VALIDATION ---
+    print("\nPerforming 5-Fold Cross-Validation (Robustness Check)...")
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(pipeline, X_train, y_train, cv=cv, scoring='accuracy')
+    
+    print(f"CV Mean Accuracy: {cv_scores.mean()*100:.2f}% (+/- {cv_scores.std()*200:.2f}%)")
+
     # --- TRAIN & EVALUATE ---
-    print("\nTraining Ensemble Model (Simplified for Speed)...")
+    print("\nTraining Final Ensemble Model...")
     pipeline.fit(X_train, y_train)
 
     print("Evaluating on Test Set...")
@@ -123,11 +130,15 @@ def main():
     print(f"\n--- RESULTS ---")
     print(f"Train Accuracy: {train_acc*100:.2f}%")
     print(f"Test Accuracy:  {test_acc*100:.2f}%")
+    print(f"CV Mean:        {cv_scores.mean()*100:.2f}%")
     
-    if train_acc - test_acc > 0.05:
-        print("WARNING: Potential Overfitting.")
+    # Check for overfitting
+    if train_acc - test_acc > 0.08:
+        print("WARNING: Model is overfitting. Test accuracy significantly lower than training.")
+    elif test_acc - cv_scores.mean() > 0.05:
+         print("WARNING: Potential data leakage or optimistic split.")
     else:
-        print("STATUS: Model generalizes well.")
+        print("STATUS: Model generalizes well and is robust.")
         
     print("\nGenerating evaluation metric images...")
     
